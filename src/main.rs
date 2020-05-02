@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() {
-    let show_podcasts = warp::path!("podcasts").map(|| {
+    let list_podcasts = warp::path!("podcasts").map(|| {
         // TODO: Pool connection
         let connection = establish_connection();
         let results = podcasts
@@ -17,7 +17,7 @@ async fn main() {
         warp::reply::json(&results)
     });
 
-    let show_podcast = warp::path!("podcasts" / i32).map(|id| {
+    let podcast = warp::path!("podcasts" / i32).map(|id| {
         // TODO: Pool connection
         let connection = establish_connection();
         let results = podcasts
@@ -43,10 +43,9 @@ async fn main() {
             warp::reply::json(&podcast)
         });
 
-    let routes = warp::get()
-        .and(show_podcasts)
-        .or(show_podcast)
-        .or(create_podcast);
+    let web = warp::fs::dir("./web/build/");
+
+    let routes = web.or(list_podcasts).or(podcast).or(create_podcast);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
