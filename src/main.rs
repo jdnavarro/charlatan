@@ -3,7 +3,7 @@ use warp::Filter;
 
 use charlatan_server::models::Podcast;
 use charlatan_server::schema::podcast::dsl as schema;
-use charlatan_server::{create_podcast, establish_connection};
+use charlatan_server::{create_podcast, establish_connection, fetch_all_episodes};
 use std::collections::HashMap;
 
 #[tokio::main]
@@ -45,7 +45,17 @@ async fn main() {
 
     let web = warp::fs::dir("./web/build/");
 
-    let routes = web.or(list_podcasts).or(get_podcast).or(add_podcast);
+    let fetch_episodes = warp::post().and(warp::path!("fetch")).map(|| {
+        let connection = establish_connection();
+        fetch_all_episodes(&connection);
+        "Episodes refreshed"
+    });
+
+    let routes = web
+        .or(add_podcast)
+        .or(list_podcasts)
+        .or(get_podcast)
+        .or(fetch_episodes);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

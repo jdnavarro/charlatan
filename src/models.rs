@@ -1,4 +1,4 @@
-use super::schema::podcast;
+use super::schema::{episode, podcast};
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Deserialize, Serialize, Clone)]
@@ -21,4 +21,12 @@ pub struct Episode {
     pub title: String,
     pub url: String,
     pub podcast_id: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "episode"]
+pub struct NewEpisode<'a> {
+    pub title: &'a str,
+    pub url: &'a str,
+    pub podcast_id: &'a i32,
 }
