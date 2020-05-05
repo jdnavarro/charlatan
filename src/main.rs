@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use warp::Filter;
 
 use charlatan_server::models::Podcast;
-use charlatan_server::schema::podcasts::dsl::podcasts;
+use charlatan_server::schema::podcast::dsl as schema;
 use charlatan_server::{create_podcast, establish_connection};
 use std::collections::HashMap;
 
@@ -11,23 +11,23 @@ async fn main() {
     let list_podcasts = warp::path!("podcasts").map(|| {
         // TODO: Pool connection
         let connection = establish_connection();
-        let results = podcasts
+        let results = schema::podcast
             .load::<Podcast>(&connection)
             .expect("Error loading posts");
         warp::reply::json(&results)
     });
 
-    let podcast = warp::path!("podcasts" / i32).map(|id| {
+    let get_podcast = warp::path!("podcasts" / i32).map(|id| {
         // TODO: Pool connection
         let connection = establish_connection();
-        let results = podcasts
+        let results = schema::podcast
             .find(id)
             .load::<Podcast>(&connection)
             .expect("Error loading posts");
         warp::reply::json(&results)
     });
 
-    let create_podcast = warp::post()
+    let add_podcast = warp::post()
         .and(warp::path!("podcasts"))
         // TODO: Limit payload size
         .and(warp::body::json())
@@ -45,7 +45,7 @@ async fn main() {
 
     let web = warp::fs::dir("./web/build/");
 
-    let routes = web.or(list_podcasts).or(podcast).or(create_podcast);
+    let routes = web.or(list_podcasts).or(get_podcast).or(add_podcast);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

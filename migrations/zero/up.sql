@@ -1,5 +1,0 @@
-CREATE TABLE podcasts (
-  id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  url TEXT NOT NULL
-)

@@ -19,11 +19,11 @@ pub fn establish_connection() -> SqliteConnection {
 }
 
 pub fn create_podcast(conn: &SqliteConnection, title: &str, url: &str) -> usize {
-    use schema::podcasts;
+    use schema::podcast;
 
     let new_podcast = NewPodcast { title, url };
 
-    diesel::insert_into(podcasts::table)
+    diesel::insert_into(podcast::table)
         .values(&new_podcast)
         .execute(conn)
         .expect("Error saving new podcast")
