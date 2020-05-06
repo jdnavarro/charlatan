@@ -5,7 +5,7 @@ authors = ["Danny Navarro"]
 edition = "2018"
 
 [dependencies]
-diesel = { version = "1.4", features = ["sqlite"] }
+diesel = { version = "1.4", features = ["sqlite", "r2d2"] }
 dotenv = { version = "0.15" }
 rss = { version = "1.0", features = ["builders", "from_url"] }
 serde = { version = "1.0", features = ["derive"] }
