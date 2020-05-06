@@ -1,12 +1,14 @@
 #[macro_use]
 extern crate diesel;
 
-use self::models::{NewEpisode, NewPodcast, Podcast};
-use diesel::prelude::*;
+use std::env;
+
+use diesel::prelude::{Connection, RunQueryDsl};
 use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
 use rss::Channel;
-use std::env;
+
+use models::{NewEpisode, NewPodcast, Podcast};
 
 pub mod models;
 pub mod schema;
@@ -20,21 +22,18 @@ pub fn establish_connection() -> SqliteConnection {
 }
 
 pub fn create_podcast(conn: &SqliteConnection, title: &str, url: &str) -> usize {
-    use schema::podcast;
-
     let new_podcast = NewPodcast { title, url };
 
-    diesel::insert_into(podcast::table)
+    diesel::insert_into(schema::podcast::table)
         .values(&new_podcast)
         .execute(conn)
         .expect("Error saving new podcast")
 }
 
 pub fn fetch_all_episodes(conn: &SqliteConnection) {
-    use schema::episode;
-    use schema::podcast::dsl::podcast;
-
-    let podcasts = podcast.load::<Podcast>(conn).expect("Error loading posts");
+    let podcasts = schema::podcast::table
+        .load::<Podcast>(conn)
+        .expect("Error loading posts");
 
     for p in podcasts {
         let channel = Channel::from_url(&p.url).unwrap();
@@ -45,7 +44,7 @@ pub fn fetch_all_episodes(conn: &SqliteConnection) {
                 url: &e.enclosure().unwrap().url(),
                 podcast_id: &p.id,
             };
-            diesel::insert_into(episode::table)
+            diesel::insert_into(schema::episode::table)
                 .values(&new_episode)
                 .execute(conn)
                 .expect("Error saving new episode");

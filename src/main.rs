@@ -1,17 +1,18 @@
-use diesel::prelude::*;
+use std::collections::HashMap;
+
+use diesel::prelude::{QueryDsl, RunQueryDsl};
 use warp::Filter;
 
-use charlatan_server::models::Podcast;
-use charlatan_server::schema::podcast::dsl as schema;
-use charlatan_server::{create_podcast, establish_connection, fetch_all_episodes};
-use std::collections::HashMap;
+use charlatan_server::{
+    create_podcast, establish_connection, fetch_all_episodes, models::Podcast, schema,
+};
 
 #[tokio::main]
 async fn main() {
     let list_podcasts = warp::path!("podcasts").map(|| {
         // TODO: Pool connection
         let connection = establish_connection();
-        let results = schema::podcast
+        let results = schema::podcast::table
             .load::<Podcast>(&connection)
             .expect("Error loading posts");
         warp::reply::json(&results)
@@ -20,7 +21,7 @@ async fn main() {
     let get_podcast = warp::path!("podcasts" / i32).map(|id| {
         // TODO: Pool connection
         let connection = establish_connection();
-        let results = schema::podcast
+        let results = schema::podcast::table
             .find(id)
             .load::<Podcast>(&connection)
             .expect("Error loading posts");

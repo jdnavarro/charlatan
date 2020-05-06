@@ -17,7 +17,4 @@ table! {
 
 joinable!(episode -> podcast (podcast_id));
 
-allow_tables_to_appear_in_same_query!(
-    episode,
-    podcast,
-);
+allow_tables_to_appear_in_same_query!(episode, podcast,);
