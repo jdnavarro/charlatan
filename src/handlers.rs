@@ -30,17 +30,19 @@ pub async fn add_podcast(
     hm: HashMap<String, String>,
     conn: PooledSqliteConnection,
 ) -> Result<impl warp::Reply, Infallible> {
-    let title = hm.get("title").unwrap();
-    let url = hm.get("url").unwrap();
+    match (hm.get("title"), hm.get("url")) {
+        (Some(title), Some(url)) => {
+            let new_podcast = NewPodcast { title, url };
 
-    let new_podcast = NewPodcast { title, url };
+            diesel::insert_into(schema::podcast::table)
+                .values(&new_podcast)
+                .execute(&conn)
+                .expect("Error saving new podcast");
 
-    let results = diesel::insert_into(schema::podcast::table)
-        .values(&new_podcast)
-        .execute(&conn)
-        .expect("Error saving new podcast");
-
-    Ok(warp::reply::json(&results))
+            Ok(StatusCode::CREATED)
+        }
+        _ => Ok(StatusCode::BAD_REQUEST),
+    }
 }
 
 pub async fn fetch_episodes(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
@@ -48,6 +50,8 @@ pub async fn fetch_episodes(conn: PooledSqliteConnection) -> Result<impl warp::R
         .load::<Podcast>(&conn)
         .expect("Error loading posts");
 
+    // TODO async fetch
+    // TODO insert in one SQL statement
     for podcast in podcasts {
         let channel = Channel::from_url(&podcast.url).unwrap();
 
