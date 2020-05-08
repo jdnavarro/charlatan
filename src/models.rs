@@ -1,10 +1,7 @@
-use std::env;
-
 use diesel::{
     r2d2::{ConnectionManager, Pool, PooledConnection},
     sqlite::SqliteConnection,
 };
-use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 
 use super::schema::{episode, podcast};
@@ -12,11 +9,8 @@ use super::schema::{episode, podcast};
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 pub type PooledSqliteConnection = PooledConnection<ConnectionManager<SqliteConnection>>;
 
-pub fn establish_pool() -> SqlitePool {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let manager = ConnectionManager::<SqliteConnection>::new(&database_url);
+pub fn establish_pool(database_url: &str) -> SqlitePool {
+    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
 
     Pool::new(manager).expect(&format!("Error connecting to {}", database_url))
 }
