@@ -5,7 +5,7 @@ use diesel::prelude::{QueryDsl, RunQueryDsl};
 use rss::Channel;
 use warp::http::StatusCode;
 
-use super::models::{NewEpisode, NewPodcast, Podcast, PooledSqliteConnection};
+use super::models::{Episode, NewEpisode, NewPodcast, Podcast, PooledSqliteConnection};
 use super::schema;
 
 pub async fn list_podcasts(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
@@ -49,6 +49,13 @@ pub async fn add_podcast(
             StatusCode::BAD_REQUEST,
         )),
     }
+}
+
+pub async fn list_episodes(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
+    let results = schema::episode::table
+        .load::<Episode>(&conn)
+        .expect("Error loading posts");
+    Ok(warp::reply::json(&results))
 }
 
 pub async fn fetch_episodes(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {

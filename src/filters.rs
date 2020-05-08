@@ -14,6 +14,7 @@ pub fn api(
     list_podcasts(pool.clone())
         .or(get_podcasts(pool.clone()))
         .or(add_podcast(pool.clone()))
+        .or(list_episodes(pool.clone()))
         .or(fetch_episodes(pool))
         .or(web)
 }
@@ -45,6 +46,15 @@ fn add_podcast(
         .and(json_body)
         .and(with_pool(pool))
         .and_then(handlers::add_podcast)
+}
+
+fn list_episodes(
+    pool: SqlitePool,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("episodes")
+        .and(warp::get())
+        .and(with_pool(pool))
+        .and_then(handlers::list_episodes)
 }
 
 fn fetch_episodes(
