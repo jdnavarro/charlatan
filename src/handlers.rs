@@ -34,14 +34,20 @@ pub async fn add_podcast(
         (Some(title), Some(url)) => {
             let new_podcast = NewPodcast { title, url };
 
-            diesel::insert_into(schema::podcast::table)
+            let rows_inserted = diesel::insert_into(schema::podcast::table)
                 .values(&new_podcast)
                 .execute(&conn)
                 .expect("Error saving new podcast");
 
-            Ok(StatusCode::CREATED)
+            Ok(warp::reply::with_status(
+                warp::reply::json(&rows_inserted),
+                StatusCode::CREATED,
+            ))
         }
-        _ => Ok(StatusCode::BAD_REQUEST),
+        p => Ok(warp::reply::with_status(
+            warp::reply::json(&p),
+            StatusCode::BAD_REQUEST,
+        )),
     }
 }
 
