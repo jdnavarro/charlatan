@@ -9,14 +9,11 @@ use crate::models::PooledSqliteConnection;
 pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let web = warp::fs::dir("./web/build/");
-
     list_podcasts(pool.clone())
         .or(get_podcasts(pool.clone()))
         .or(add_podcast(pool.clone()))
         .or(list_episodes(pool.clone()))
         .or(fetch_episodes(pool))
-        .or(web)
 }
 
 fn list_podcasts(
