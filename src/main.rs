@@ -1,8 +1,14 @@
+#[macro_use]
+extern crate diesel;
+
 use dotenv::dotenv;
 use std::env;
 use std::net::SocketAddr;
 
-use charlatan_server::{filters, models};
+pub mod filters;
+pub mod handlers;
+pub mod models;
+pub mod schema;
 
 #[tokio::main]
 async fn main() {
