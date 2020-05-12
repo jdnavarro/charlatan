@@ -53,6 +53,8 @@ pub async fn add_podcast(
 
 pub async fn list_episodes(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
     let results = schema::episode::table
+        .order(schema::episode::id)
+        .limit(20)
         .load::<Episode>(&conn)
         .expect("Error loading posts");
     Ok(warp::reply::json(&results))
