@@ -1,44 +1,39 @@
-use std::convert::Infallible;
-
-use diesel::prelude::{QueryDsl, RunQueryDsl};
 use rss::Channel;
-use warp::http::StatusCode;
+use sqlx::sqlite::SqlitePool;
 
-use super::model::{Episode, NewEpisode};
-use crate::podcast::model::Podcast;
-use crate::schema;
-use crate::PooledSqliteConnection;
+use super::model::Episode;
+use crate::podcast;
 
-pub async fn list(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
-    let results = schema::episode::table
-        .order(schema::episode::id)
-        .limit(20)
-        .load::<Episode>(&conn)
-        .expect("Error loading posts");
-    Ok(warp::reply::json(&results))
+pub(super) async fn list(pool: SqlitePool) -> anyhow::Result<Vec<Episode>> {
+    Ok(sqlx::query_as!(
+        Episode,
+        r#"
+SELECT id, title, url, podcast_id
+FROM episode
+ORDER BY id
+        "#
+    )
+    .fetch_all(&pool)
+    .await?)
 }
 
-pub async fn crawl(conn: PooledSqliteConnection) -> Result<impl warp::Reply, Infallible> {
-    let podcasts = schema::podcast::table
-        .load::<Podcast>(&conn)
-        .expect("Error loading posts");
-
-    // TODO async fetch
-    // TODO insert in one SQL statement
+pub async fn crawl(pool: SqlitePool) -> anyhow::Result<()> {
+    let podcasts = podcast::handler::list(pool.clone()).await?;
     for podcast in podcasts {
-        let channel = Channel::from_url(&podcast.url).unwrap();
-
-        for episode_item in channel.items() {
-            let new_episode = NewEpisode {
-                title: &episode_item.title().unwrap(),
-                url: &episode_item.enclosure().unwrap().url(),
-                podcast_id: &podcast.id,
-            };
-            diesel::insert_into(schema::episode::table)
-                .values(&new_episode)
-                .execute(&conn)
-                .expect("Error saving new episode");
+        let channel = Channel::from_url(&podcast.url)?;
+        for episode in channel.items() {
+            sqlx::query!(
+                r#"
+            INSERT INTO episode ( title, url, podcast_id )
+            VALUES ( $1, $2, $3 )
+                    "#,
+                &episode.title(),
+                &episode.enclosure().unwrap().url(),
+                &podcast.id,
+            )
+            .execute(&pool)
+            .await?;
         }
     }
-    Ok(StatusCode::CREATED)
+    Ok(())
 }
