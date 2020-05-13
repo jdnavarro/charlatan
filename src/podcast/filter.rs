@@ -47,9 +47,8 @@ fn add(
     }
 
     let json_body = warp::body::content_length_limit(1024 * 16).and(warp::body::json());
-
-    warp::post()
-        .and(warp::path!("podcasts"))
+    warp::path!("podcasts")
+        .and(warp::post())
         .and(json_body)
         .and(warp::any().map(move || pool.clone()))
         .and_then(handle)

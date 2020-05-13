@@ -12,6 +12,10 @@ pub(crate) mod podcast;
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
+    env::set_var("RUST_LOG", "charlatan=debug");
+
+    pretty_env_logger::init();
+
     let pool = SqlitePool::builder()
         .build(&env::var("DATABASE_URL")?)
         .await?;
@@ -21,9 +25,13 @@ async fn main() -> anyhow::Result<()> {
         .parse()
         .expect("BIND_ADDRESS is invalid");
 
-    warp::serve(podcast::api(pool.clone()).or(episode::api(pool)))
-        .run(bind_address)
-        .await;
+    warp::serve(
+        podcast::api(pool.clone())
+            .or(episode::api(pool))
+            .with(warp::log("charlatan")),
+    )
+    .run(bind_address)
+    .await;
 
     Ok(())
 }
