@@ -14,7 +14,13 @@ jobs:
       - name: Install sqlite
         run: sudo apt install libsqlite3-dev
       - uses: actions/checkout@v2
+      - name: Configure sqlite
+        run: sqlite3 /tmp/test.sqlite -line ".read schema.sql"
       - name: Build
         run: cargo build --verbose
+        env:
+          DATABASE_URL: "sqlite:/tmp/test.sqlite" 
       - name: Run tests
         run: cargo test --verbose
+        env:
+          DATABASE_URL: "sqlite:/tmp/test.sqlite" 
