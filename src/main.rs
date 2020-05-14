@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use std::env;
 use std::net::SocketAddr;
 
@@ -10,8 +9,6 @@ pub(crate) mod podcast;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv().ok();
-
     env::set_var("RUST_LOG", "charlatan=debug");
 
     pretty_env_logger::init();
