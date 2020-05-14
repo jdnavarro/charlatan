@@ -1,10 +1,9 @@
-use std::convert::Infallible;
-
 use sqlx::sqlite::SqlitePool;
-use warp::http::StatusCode;
 use warp::Filter;
 
 use super::handler;
+use crate::error::Error;
+use crate::with_pool;
 
 pub fn api(
     pool: SqlitePool,
@@ -15,25 +14,27 @@ pub fn api(
 fn list(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    async fn handle(p: SqlitePool) -> Result<impl warp::Reply, Infallible> {
-        let episodes = handler::list(p).await.expect("Error loading episodes");
-        Ok(warp::reply::json(&episodes))
-    }
     warp::path!("episodes")
         .and(warp::get())
-        .and(warp::any().map(move || pool.clone()))
-        .and_then(handle)
+        .and(with_pool(pool))
+        .and_then(|p| async {
+            match handler::list(p).await {
+                Ok(episodes) => Ok(warp::reply::json(&episodes)),
+                Err(e) => Err(warp::reject::custom(Error::Database(e))),
+            }
+        })
 }
 
 fn crawl(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    async fn handle(p: SqlitePool) -> Result<impl warp::Reply, Infallible> {
-        handler::crawl(p).await.expect("Error loading episodes");
-        Ok(StatusCode::CREATED)
-    }
     warp::post()
         .and(warp::path!("crawl"))
         .and(warp::any().map(move || pool.clone()))
-        .and_then(handle)
+        .and_then(|p| async {
+            match handler::crawl(p).await {
+                Ok(episodes) => Ok(warp::reply::json(&episodes)),
+                Err(e) => Err(warp::reject::custom(Error::Database(e))),
+            }
+        })
 }

@@ -4,7 +4,7 @@ use sqlx::sqlite::SqliteQueryAs;
 
 use super::model::Podcast;
 
-pub(crate) async fn list(pool: SqlitePool) -> anyhow::Result<Vec<Podcast>> {
+pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>, sqlx::Error> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
@@ -17,7 +17,7 @@ ORDER BY id
     .await?)
 }
 
-pub(super) async fn get(pool: SqlitePool, id: i32) -> anyhow::Result<Podcast> {
+pub(super) async fn get(pool: SqlitePool, id: i32) -> Result<Podcast, sqlx::Error> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
@@ -31,8 +31,9 @@ WHERE id = ?
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, url: &str) -> anyhow::Result<i32> {
-    let channel = Channel::from_url(url)?;
+pub(super) async fn add(pool: SqlitePool, url: &str) -> Result<i32, sqlx::Error> {
+    // TODO: Report and skip errors.
+    let channel = Channel::from_url(url).unwrap();
 
     // TODO: Insert episodes here
 

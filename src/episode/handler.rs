@@ -4,7 +4,7 @@ use sqlx::sqlite::SqlitePool;
 use super::model::Episode;
 use crate::podcast;
 
-pub(super) async fn list(pool: SqlitePool) -> anyhow::Result<Vec<Episode>> {
+pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
     Ok(sqlx::query_as!(
         Episode,
         r#"
@@ -17,10 +17,11 @@ ORDER BY id
     .await?)
 }
 
-pub async fn crawl(pool: SqlitePool) -> anyhow::Result<()> {
+pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
     let podcasts = podcast::handler::list(pool.clone()).await?;
     for podcast in podcasts {
-        let channel = Channel::from_url(&podcast.url)?;
+        // TODO: Bubble up error
+        let channel = Channel::from_url(&podcast.url).unwrap();
         for episode in channel.items() {
             sqlx::query!(
                 r#"
