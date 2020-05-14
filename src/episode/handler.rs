@@ -5,32 +5,32 @@ use super::model::Episode;
 use crate::podcast;
 
 pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
-    Ok(sqlx::query_as!(
+    sqlx::query_as!(
         Episode,
         r#"
-SELECT id, title, url, podcast_id
+SELECT id, title, uri, podcast
 FROM episode
-ORDER BY id
         "#
     )
     .fetch_all(&pool)
-    .await?)
+    .await
 }
 
 pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
     let podcasts = podcast::handler::list(pool.clone()).await?;
     for podcast in podcasts {
         // TODO: Bubble up error
-        let channel = Channel::from_url(&podcast.url).unwrap();
+        let channel = Channel::from_url(&podcast.uri.to_string()).unwrap();
         for episode in channel.items() {
             sqlx::query!(
                 r#"
-            INSERT INTO episode ( title, url, podcast_id )
-            VALUES ( $1, $2, $3 )
+            INSERT INTO episode ( id, title, uri, podcast )
+            VALUES ( $1, $2, $3, $4 )
                     "#,
+                &episode.guid().unwrap().value(),
                 &episode.title(),
                 &episode.enclosure().unwrap().url(),
-                &podcast.id,
+                &podcast.uri,
             )
             .execute(&pool)
             .await?;

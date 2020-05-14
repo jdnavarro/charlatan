@@ -30,7 +30,7 @@ fn crawl(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::post()
         .and(warp::path!("crawl"))
-        .and(warp::any().map(move || pool.clone()))
+        .and(with_pool(pool))
         .and_then(|p| async {
             match handler::crawl(p).await {
                 Ok(episodes) => Ok(warp::reply::json(&episodes)),

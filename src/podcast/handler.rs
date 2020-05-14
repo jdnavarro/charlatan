@@ -8,47 +8,46 @@ pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>, sqlx::Error> 
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, title, url
+SELECT uri, title
 FROM podcast
-ORDER BY id
         "#
     )
     .fetch_all(&pool)
     .await?)
 }
 
-pub(super) async fn get(pool: SqlitePool, id: i32) -> Result<Podcast, sqlx::Error> {
+pub(super) async fn get(pool: SqlitePool, uri: String) -> Result<Podcast, sqlx::Error> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, title, url
+SELECT uri, title
 FROM podcast
-WHERE id = ?
+WHERE uri = ?
         "#,
-        id
+        uri
     )
     .fetch_one(&pool)
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, url: &str) -> Result<i32, sqlx::Error> {
+pub(super) async fn add(pool: SqlitePool, uri: String) -> Result<String, sqlx::Error> {
     // TODO: Report and skip errors.
-    let channel = Channel::from_url(url).unwrap();
+    let channel = Channel::from_url(&uri).unwrap();
 
     // TODO: Insert episodes here
 
     sqlx::query!(
         r#"
-INSERT INTO podcast ( title, url )
+INSERT INTO podcast ( uri, title )
 VALUES ( $1, $2 )
         "#,
-        &channel.title(),
-        url
+        uri,
+        &channel.title()
     )
     .execute(&pool)
     .await?;
 
-    let rec: (i32,) = sqlx::query_as("SELECT last_insert_rowid()")
+    let rec: (String,) = sqlx::query_as("SELECT last_insert_rowid()")
         .fetch_one(&pool)
         .await?;
 

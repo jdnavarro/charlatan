@@ -1,13 +1,12 @@
 CREATE TABLE podcast (
-  id INTEGER PRIMARY KEY NOT NULL,
-  title TEXT NOT NULL,
-  url TEXT NOT NULL
+  uri TEXT PRIMARY KEY NOT NULL,
+  title TEXT NOT NULL
 );
 
 CREATE TABLE episode (
-  id INTEGER PRIMARY KEY NOT NULL,
+  id TEXT PRIMARY KEY NOT NULL,
   title TEXT NOT NULL,
-  url TEXT NOT NULL,
-  podcast_id INTEGER NOT NULL,
-  FOREIGN KEY (podcast_id) REFERENCES podcast (id)
+  uri TEXT NOT NULL,
+  podcast TEXT NOT NULL,
+  FOREIGN KEY (podcast) REFERENCES podcast (uri)
   )

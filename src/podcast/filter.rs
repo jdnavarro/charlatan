@@ -29,11 +29,11 @@ fn list(
 fn get(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("podcasts" / i32)
+    warp::path!("podcasts" / String)
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(|id, p| async move {
-            match handler::get(p, id).await {
+        .and_then(|uri, p| async {
+            match handler::get(p, uri).await {
                 Ok(episode) => Ok(warp::reply::json(&episode)),
                 Err(e) => Err(warp::reject::custom(Error::Database(e))),
             }
@@ -49,8 +49,8 @@ fn add(
         .and(warp::post())
         .and(with_pool(pool))
         .and(json_body)
-        .and_then(|p, url: String| async move {
-            match handler::add(p, &url).await {
+        .and_then(|p, uri| async {
+            match handler::add(p, uri).await {
                 Ok(_) => Ok(StatusCode::CREATED),
                 Err(e) => Err(warp::reject::custom(Error::Database(e))),
             }

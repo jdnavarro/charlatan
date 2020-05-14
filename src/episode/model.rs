@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Clone, Serialize, sqlx::FromRow)]
 pub struct Episode {
-    pub id: i32, // TODO: uuid
+    pub id: String,
     pub title: String,
-    pub url: String,
-    pub podcast_id: i32,
+    pub uri: String,
+    pub podcast: String,
 }

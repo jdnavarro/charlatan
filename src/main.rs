@@ -4,9 +4,8 @@ use std::net::SocketAddr;
 use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
-mod episode;
-pub(crate) mod error;
-pub(crate) mod podcast;
+use charlatan_server::episode;
+use charlatan_server::podcast;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -32,10 +31,4 @@ async fn main() -> anyhow::Result<()> {
     .await;
 
     Ok(())
-}
-
-pub(crate) fn with_pool(
-    pool: SqlitePool,
-) -> impl Filter<Extract = (SqlitePool,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || pool.clone())
 }
