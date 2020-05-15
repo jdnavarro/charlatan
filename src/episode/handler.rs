@@ -26,7 +26,7 @@ pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
                 r#"
             INSERT INTO episode ( id, title, uri, podcast )
             VALUES ( $1, $2, $3, $4 )
-                    "#,
+                "#,
                 &episode.guid().unwrap().value(),
                 &episode.title(),
                 &episode.enclosure().unwrap().url(),

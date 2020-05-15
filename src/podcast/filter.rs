@@ -1,10 +1,8 @@
 use sqlx::sqlite::SqlitePool;
-use warp::http::StatusCode;
 use warp::Filter;
 
 use super::handler;
-use crate::error::Error;
-use crate::with_pool;
+use crate::{with_handler, with_pool};
 
 pub fn api(
     pool: SqlitePool,
@@ -18,12 +16,7 @@ fn list(
     warp::path!("podcasts")
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(|p| async {
-            match handler::list(p).await {
-                Ok(podcasts) => Ok(warp::reply::json(&podcasts)),
-                Err(e) => Err(warp::reject::custom(Error::Database(e))),
-            }
-        })
+        .and_then(|p| with_handler(handler::list(p)))
 }
 
 fn get(
@@ -32,12 +25,7 @@ fn get(
     warp::path!("podcasts" / String)
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(|uri, p| async {
-            match handler::get(p, uri).await {
-                Ok(episode) => Ok(warp::reply::json(&episode)),
-                Err(e) => Err(warp::reject::custom(Error::Database(e))),
-            }
-        })
+        .and_then(|uri, p| with_handler(handler::get(p, uri)))
 }
 
 fn add(
@@ -49,10 +37,5 @@ fn add(
         .and(warp::post())
         .and(with_pool(pool))
         .and(json_body)
-        .and_then(|p, uri| async {
-            match handler::add(p, uri).await {
-                Ok(_) => Ok(StatusCode::CREATED),
-                Err(e) => Err(warp::reject::custom(Error::Database(e))),
-            }
-        })
+        .and_then(|p, uri| with_handler(handler::add(p, uri)))
 }

@@ -2,8 +2,7 @@ use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
 use super::handler;
-use crate::error::Error;
-use crate::with_pool;
+use crate::{with_handler, with_pool};
 
 pub fn api(
     pool: SqlitePool,
@@ -17,12 +16,7 @@ fn list(
     warp::path!("episodes")
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(|p| async {
-            match handler::list(p).await {
-                Ok(episodes) => Ok(warp::reply::json(&episodes)),
-                Err(e) => Err(warp::reject::custom(Error::Database(e))),
-            }
-        })
+        .and_then(|p| with_handler(handler::list(p)))
 }
 
 fn crawl(
@@ -31,10 +25,5 @@ fn crawl(
     warp::post()
         .and(warp::path!("crawl"))
         .and(with_pool(pool))
-        .and_then(|p| async {
-            match handler::crawl(p).await {
-                Ok(episodes) => Ok(warp::reply::json(&episodes)),
-                Err(e) => Err(warp::reject::custom(Error::Database(e))),
-            }
-        })
+        .and_then(|p| with_handler(handler::crawl(p)))
 }
