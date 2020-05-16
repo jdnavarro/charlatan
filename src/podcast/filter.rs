@@ -35,7 +35,7 @@ fn add(
 
     warp::path!("podcasts")
         .and(warp::post())
-        .and(with_pool(pool))
         .and(json_body)
-        .and_then(|p, uri| with_handler(handler::add(p, uri)))
+        .and(with_pool(pool))
+        .and_then(|uri, p| with_handler(handler::add(p, uri)))
 }

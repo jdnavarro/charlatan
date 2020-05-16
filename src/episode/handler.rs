@@ -16,6 +16,39 @@ FROM episode
     .await
 }
 
+pub(super) async fn get_progress(pool: SqlitePool, episode: i32) -> Result<i32, sqlx::Error> {
+    let episode = sqlx::query!(
+        r#"
+SELECT progress
+FROM episode
+WHERE id = ?
+        "#,
+        episode,
+    )
+    .fetch_one(&pool)
+    .await?;
+    Ok(episode.progress)
+}
+
+pub(super) async fn set_progress(
+    pool: SqlitePool,
+    episode: i32,
+    progress: i32,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+UPDATE episode
+SET progress = $1
+WHERE id = $2
+        "#,
+        progress,
+        episode,
+    )
+    .execute(&pool)
+    .await?;
+    Ok(())
+}
+
 pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
     let podcasts = podcast::handler::list(pool.clone()).await?;
     for podcast in podcasts {
@@ -24,10 +57,10 @@ pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
         for episode in channel.items() {
             sqlx::query!(
                 r#"
-            INSERT INTO episode ( id, title, uri, podcast )
-            VALUES ( $1, $2, $3, $4 )
+INSERT INTO episode ( title, uri, podcast )
+VALUES ( $1, $2, $3 )
                 "#,
-                &episode.guid().unwrap().value(),
+                // &episode.guid().unwrap().value(),
                 &episode.title(),
                 &episode.enclosure().unwrap().url(),
                 &podcast.uri,

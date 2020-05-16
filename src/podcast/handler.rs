@@ -30,7 +30,7 @@ WHERE uri = ?
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, uri: String) -> Result<String, sqlx::Error> {
+pub(super) async fn add(pool: SqlitePool, uri: String) -> Result<i32, sqlx::Error> {
     // TODO: Report and skip errors.
     let channel = Channel::from_url(&uri).unwrap();
 
@@ -47,7 +47,7 @@ VALUES ( $1, $2 )
     .execute(&pool)
     .await?;
 
-    let rec: (String,) = sqlx::query_as("SELECT last_insert_rowid()")
+    let rec: (i32,) = sqlx::query_as("SELECT last_insert_rowid()")
         .fetch_one(&pool)
         .await?;
 
