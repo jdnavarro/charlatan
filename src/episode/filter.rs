@@ -37,7 +37,7 @@ fn set_progress(
     let json_body = warp::body::content_length_limit(1024 * 16).and(warp::body::json());
 
     warp::path!("episodes" / i32 / "progress")
-        .and(warp::post())
+        .and(warp::put())
         .and(json_body)
         .and(with_pool(pool))
         .and_then(|e, prog, p| with_handler(handler::set_progress(p, e, prog)))

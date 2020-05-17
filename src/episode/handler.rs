@@ -57,10 +57,9 @@ pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
         for episode in channel.items() {
             sqlx::query!(
                 r#"
-INSERT INTO episode ( title, uri, podcast )
-VALUES ( $1, $2, $3 )
+INSERT INTO episode ( title, uri, progress, podcast )
+VALUES ( $1, $2, 0, $3 )
                 "#,
-                // &episode.guid().unwrap().value(),
                 &episode.title(),
                 &episode.enclosure().unwrap().url(),
                 &podcast.uri,
