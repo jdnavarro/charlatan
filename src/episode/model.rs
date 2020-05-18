@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct Episode {
     pub id: i32, // Replace with UUID, u128 for sqlite not implemented yet in sqlx
     pub title: String,
-    pub uri: String,
+    pub src: String,
     pub podcast: String,
 }
 

@@ -25,7 +25,7 @@ fn get(
     warp::path!("podcasts" / String)
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(|uri, p| with_handler(handler::get(p, uri)))
+        .and_then(|src, p| with_handler(handler::get(p, src)))
 }
 
 fn add(
@@ -37,5 +37,5 @@ fn add(
         .and(warp::post())
         .and(json_body)
         .and(with_pool(pool))
-        .and_then(|uri, p| with_handler(handler::add(p, uri)))
+        .and_then(|src, p| with_handler(handler::add(p, src)))
 }

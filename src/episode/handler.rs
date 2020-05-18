@@ -8,7 +8,7 @@ pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> 
     sqlx::query_as!(
         Episode,
         r#"
-SELECT id, title, uri, podcast
+SELECT id, title, src, podcast
 FROM episode
         "#
     )
@@ -53,16 +53,16 @@ pub(super) async fn crawl(pool: SqlitePool) -> Result<(), sqlx::Error> {
     let podcasts = podcast::handler::list(pool.clone()).await?;
     for podcast in podcasts {
         // TODO: Bubble up error
-        let channel = Channel::from_url(&podcast.uri.to_string()).unwrap();
+        let channel = Channel::from_url(&podcast.src.to_string()).unwrap();
         for episode in channel.items() {
             sqlx::query!(
                 r#"
-INSERT INTO episode ( title, uri, progress, podcast )
+INSERT INTO episode ( title, src, progress, podcast )
 VALUES ( $1, $2, 0, $3 )
                 "#,
                 &episode.title(),
                 &episode.enclosure().unwrap().url(),
-                &podcast.uri,
+                &podcast.src,
             )
             .execute(&pool)
             .await?;
