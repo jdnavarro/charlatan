@@ -1,11 +1,10 @@
 use rss::Channel;
-use sqlx::sqlite::SqlitePool;
-use sqlx::sqlite::SqliteQueryAs;
+use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
 use super::entity::Podcast;
 
 pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>, sqlx::Error> {
-    Ok(sqlx::query_as!(
+    sqlx::query_as!(
         Podcast,
         r#"
 SELECT src, title
@@ -13,11 +12,11 @@ FROM podcast
         "#
     )
     .fetch_all(&pool)
-    .await?)
+    .await
 }
 
 pub(super) async fn get(pool: SqlitePool, src: String) -> Result<Podcast, sqlx::Error> {
-    Ok(sqlx::query_as!(
+    sqlx::query_as!(
         Podcast,
         r#"
 SELECT src, title
@@ -27,11 +26,11 @@ WHERE src = ?
         src
     )
     .fetch_one(&pool)
-    .await?)
+    .await
 }
 
 pub(super) async fn add(pool: SqlitePool, src: String) -> Result<i32, sqlx::Error> {
-    // TODO: Report and skip errors.
+    // TODO: Report and skip errors
     let channel = Channel::from_url(&src).unwrap();
 
     // TODO: Insert episodes here
