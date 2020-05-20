@@ -1,14 +1,14 @@
 use rss::Channel;
 use sqlx::sqlite::SqlitePool;
 
-use super::model::Episode;
+use super::entity::Episode;
 use crate::podcast;
 
 pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
     sqlx::query_as!(
         Episode,
         r#"
-SELECT id, title, src, progress, podcast
+SELECT id, title, src, progress, position, podcast
 FROM episode
 ORDER BY id ASC
 LIMIT 50

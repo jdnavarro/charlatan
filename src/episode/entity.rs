@@ -6,5 +6,6 @@ pub struct Episode {
     pub title: String,
     pub src: String,
     pub progress: i32,
+    pub position: Option<i32>,
     pub podcast: String,
 }

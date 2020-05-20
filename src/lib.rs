@@ -5,8 +5,10 @@ use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 use warp::{Filter, Future};
 
+pub mod entity;
 pub mod episode;
 pub mod podcast;
+pub mod queue;
 
 pub(crate) fn with_pool(
     pool: SqlitePool,

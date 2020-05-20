@@ -2,7 +2,7 @@ use rss::Channel;
 use sqlx::sqlite::SqlitePool;
 use sqlx::sqlite::SqliteQueryAs;
 
-use super::model::Podcast;
+use super::entity::Podcast;
 
 pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>, sqlx::Error> {
     Ok(sqlx::query_as!(

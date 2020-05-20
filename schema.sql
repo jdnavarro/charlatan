@@ -8,6 +8,7 @@ CREATE TABLE episode (
   title TEXT NOT NULL,
   src TEXT NOT NULL,
   progress INTEGER NOT NULL,
+  position INTEGER,
   podcast TEXT NOT NULL,
   FOREIGN KEY (podcast) REFERENCES podcast (src)
   );
