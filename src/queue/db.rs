@@ -1,5 +1,7 @@
 use crate::entity::Episode;
+use sqlx::prelude::Executor;
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
+use thiserror::Error;
 
 pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
     sqlx::query_as!(
@@ -74,11 +76,34 @@ AND position IS NOT NULL;
     Ok(())
 }
 
+#[derive(Error, Debug)]
+pub enum EpisodeError {
+    #[error("No episodes")]
+    NotFound,
+    #[error(transparent)]
+    DB(sqlx::Error),
+}
+
+impl From<sqlx::Error> for EpisodeError {
+    fn from(e: sqlx::Error) -> Self {
+        log::debug!("sqlx returned err -- {:#?}", &e);
+        match e {
+            sqlx::Error::RowNotFound => EpisodeError::NotFound,
+            _ => EpisodeError::DB(e),
+        }
+    }
+}
+
 pub(super) async fn position(
     pool: SqlitePool,
     id: i32,
     new_position: i32,
-) -> Result<(), sqlx::Error> {
+) -> Result<(), EpisodeError> {
+    // pool.acquire()
+    //     .await?
+    //     .execute("SAVEPOINT update_queue")
+    //     .await?;
+
     let (old_position,): (i32,) = sqlx::query_as(
         r#"
 SELECT position
@@ -96,8 +121,8 @@ WHERE id = ?;
             r#"
 UPDATE episode
 SET position = position - 1
-WHERE (position >= $1 AND position <= $2)
-AND position IS NOT NULL;
+WHERE position >= $1
+AND position <= $2
         "#,
             old_position,
             new_position,
@@ -109,8 +134,8 @@ AND position IS NOT NULL;
             r#"
 UPDATE episode
 SET position = position + 1
-WHERE (position >= $1 AND position <= $2)
-AND position IS NOT NULL;
+WHERE position >= $1
+AND position <= $2
         "#,
             new_position,
             old_position,
@@ -131,5 +156,53 @@ WHERE id = $2;
     .execute(&pool)
     .await?;
 
+    // pool.acquire()
+    //     .await?
+    //     .execute("RELEASE update_queue")
+    //     .await?;
+
     Ok(())
+}
+
+mod tests {
+    use std::env;
+
+    use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn it_fails_with_not_found_episode_when_no_episodes() -> anyhow::Result<()> {
+        let pool = SqlitePool::builder()
+            .build(&env::var("DATABASE_URL")?)
+            .await?;
+
+        let mut conn = pool.acquire().await?;
+
+        let _ = conn
+            .execute(
+                r#"
+CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER)
+                "#,
+            )
+            .await?;
+
+        match position(pool, 2, 3).await {
+            Err(EpisodeError::NotFound) => Ok(()),
+            Err(e) => panic!(e),
+            Ok(msg) => panic!(msg),
+        }
+
+        //         let _ = conn
+        //             .execute(
+        //                 r#"
+        // SELECT count(*) from episode;
+        //                 "#,
+        //             )
+        //             .await?;
+
+        // assert_eq!(affected, 0);
+
+        // Ok(())
+    }
 }
