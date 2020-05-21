@@ -7,10 +7,7 @@ use crate::with_pool;
 pub(crate) fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    list(pool.clone())
-        .or(add(pool.clone()))
-        .or(delete(pool.clone()))
-        .or(position(pool))
+    list(pool.clone()).or(add(pool.clone())).or(delete(pool))
 }
 
 fn list(
@@ -38,14 +35,4 @@ fn delete(
         .and(warp::path!("queue" / i32))
         .and(warp::delete())
         .and_then(handler::delete)
-}
-
-fn position(
-    pool: SqlitePool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
-        // TODO: Better route
-        .and(warp::path!("queue" / i32 / i32))
-        .and(warp::put())
-        .and_then(handler::position)
 }
