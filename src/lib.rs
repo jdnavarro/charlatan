@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
@@ -37,4 +38,9 @@ where
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
     }
+}
+
+pub(crate) fn json_body<T: DeserializeOwned + Send>(
+) -> impl Filter<Extract = (T,), Error = warp::Rejection> + Copy {
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }

@@ -143,3 +143,36 @@ WHERE id = $2;
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+
+    use sqlx::prelude::Executor;
+    use sqlx::sqlite::SqlitePool;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn it_fails_with_not_found_episode_when_no_episodes() -> anyhow::Result<()> {
+        let pool = SqlitePool::builder()
+            .build(&env::var("DATABASE_URL")?)
+            .await?;
+
+        let mut conn = pool.acquire().await?;
+
+        let _ = conn
+            .execute(
+                r#"
+CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER)
+                "#,
+            )
+            .await?;
+
+        match position(pool, 2, 3).await {
+            Err(episode::Error::NotFound) => Ok(()),
+            Err(e) => panic!(e),
+            Ok(msg) => panic!(msg),
+        }
+    }
+}

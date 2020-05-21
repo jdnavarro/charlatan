@@ -3,7 +3,7 @@ use warp::Filter;
 
 use super::db;
 use super::handler;
-use crate::{with_handler, with_pool};
+use crate::{json_body, with_handler, with_pool};
 
 pub fn api(
     pool: SqlitePool,
@@ -36,11 +36,9 @@ fn get_progress(
 fn set_progress(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let json_body = warp::body::content_length_limit(1024 * 16).and(warp::body::json());
-
     warp::path!("episodes" / i32 / "progress")
         .and(warp::put())
-        .and(json_body)
+        .and(json_body())
         .and(with_pool(pool))
         .and_then(|e, prog, p| with_handler(db::set_progress(p, e, prog)))
 }
@@ -58,8 +56,8 @@ fn position(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
-        // TODO: Better route
-        .and(warp::path!("queue" / i32 / i32))
-        .and(warp::put())
+        .and(warp::path!("episode" / i32))
+        .and(warp::patch())
+        .and(json_body())
         .and_then(handler::position)
 }
