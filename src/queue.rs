@@ -1,4 +1,4 @@
-mod db;
+pub(crate) mod db;
 mod filter;
 mod handler;
 

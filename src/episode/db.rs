@@ -1,8 +1,7 @@
 use rss::Channel;
-use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
+use sqlx::sqlite::SqlitePool;
 
 use super::entity::Episode;
-use crate::episode;
 use crate::podcast;
 
 pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
@@ -72,107 +71,4 @@ VALUES ( $1, $2, 0, $3 )
         }
     }
     Ok(())
-}
-
-pub(super) async fn position(
-    pool: SqlitePool,
-    id: i32,
-    new_position: i32,
-) -> Result<(), episode::Error> {
-    // pool.acquire()
-    //     .await?
-    //     .execute("SAVEPOINT update_queue")
-    //     .await?;
-
-    let (old_position,): (i32,) = sqlx::query_as(
-        r#"
-SELECT position
-FROM episode
-WHERE id = ?;
-        "#,
-    )
-    .bind(id)
-    .fetch_one(&pool)
-    .await?;
-
-    // TODO: Handle when not enqueued
-    if new_position > old_position {
-        sqlx::query!(
-            r#"
-UPDATE episode
-SET position = position - 1
-WHERE position >= $1
-AND position <= $2
-        "#,
-            old_position,
-            new_position,
-        )
-        .execute(&pool)
-        .await?;
-    } else {
-        sqlx::query!(
-            r#"
-UPDATE episode
-SET position = position + 1
-WHERE position >= $1
-AND position <= $2
-        "#,
-            new_position,
-            old_position,
-        )
-        .execute(&pool)
-        .await?;
-    }
-
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET position = $1
-WHERE id = $2;
-        "#,
-        new_position,
-        id,
-    )
-    .execute(&pool)
-    .await?;
-
-    // pool.acquire()
-    //     .await?
-    //     .execute("RELEASE update_queue")
-    //     .await?;
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use std::env;
-
-    use sqlx::prelude::Executor;
-    use sqlx::sqlite::SqlitePool;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn it_fails_with_not_found_episode_when_no_episodes() -> anyhow::Result<()> {
-        let pool = SqlitePool::builder()
-            .build(&env::var("DATABASE_URL")?)
-            .await?;
-
-        let mut conn = pool.acquire().await?;
-
-        let _ = conn
-            .execute(
-                r#"
-CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER)
-                "#,
-            )
-            .await?;
-
-        match position(pool, 2, 3).await {
-            Err(episode::Error::NotFound) => Ok(()),
-            Err(e) => panic!(e),
-            Ok(msg) => panic!(msg),
-        }
-    }
 }
