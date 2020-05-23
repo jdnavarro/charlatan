@@ -2,7 +2,7 @@ use crate::entity::Episode;
 use crate::episode;
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
-pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
+pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Episode>, sqlx::Error> {
     sqlx::query_as!(
         Episode,
         r#"
@@ -14,90 +14,6 @@ ORDER BY position;
     )
     .fetch_all(&pool)
     .await
-}
-
-pub(super) async fn add(pool: SqlitePool, id: i32) -> Result<i32, sqlx::Error> {
-    let (position,): (i32,) = sqlx::query_as("SELECT MAX(position) + 1 FROM episode")
-        .fetch_one(&pool)
-        .await?;
-
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET position = $1
-WHERE id = $2
-AND position IS NULL;
-        "#,
-        position,
-        id
-    )
-    .execute(&pool)
-    .await?;
-    Ok(position)
-}
-
-pub(super) async fn delete(pool: SqlitePool, id: i32) -> Result<(), sqlx::Error> {
-    let (position,): (i32,) = sqlx::query_as(
-        r#"
-SELECT position
-FROM episode
-WHERE id = ?;
-        "#,
-    )
-    .bind(id)
-    .fetch_one(&pool)
-    .await?;
-
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET position = NULL
-WHERE id = ?;
-        "#,
-        id
-    )
-    .execute(&pool)
-    .await?;
-
-    // TODO: Handle null
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET position = position - 1
-WHERE position >= ?
-AND position IS NOT NULL;
-        "#,
-        position
-    )
-    .execute(&pool)
-    .await?;
-
-    Ok(())
-}
-
-async fn get_max_position(pool: &SqlitePool) -> Result<i32, episode::Error> {
-    let (p,): (i32,) = sqlx::query_as(
-        r#"
-SELECT MAX(position) FROM episode
-        "#,
-    )
-    .fetch_one(pool)
-    .await?;
-    Ok(p)
-}
-
-async fn get_position(pool: &SqlitePool, id: i32) -> Result<Option<i32>, episode::Error> {
-    let (p,): (Option<i32>,) = sqlx::query_as(
-        r#"
-SELECT position
-FROM episode
-WHERE id = ?
-        "#,
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
-    Ok(p)
 }
 
 pub async fn position(
@@ -160,6 +76,62 @@ WHERE id = $2;
     sqlx::query("RELEASE update_queue").execute(pool).await?;
 
     Ok(new_position)
+}
+
+pub(crate) async fn delete(pool: &SqlitePool, id: i32) -> Result<(), episode::Error> {
+    match get_position(&pool, id).await? {
+        None => Ok(()),
+        Some(position) => {
+            sqlx::query!(
+                r#"
+        UPDATE episode
+        SET position = NULL
+        WHERE id = ?;
+                "#,
+                id
+            )
+            .execute(pool)
+            .await?;
+
+            sqlx::query!(
+                r#"
+        UPDATE episode
+        SET position = position - 1
+        WHERE position >= ?
+                "#,
+                position
+            )
+            .execute(pool)
+            .await?;
+
+            Ok(())
+        }
+    }
+}
+
+async fn get_max_position(pool: &SqlitePool) -> Result<i32, episode::Error> {
+    let (p,): (i32,) = sqlx::query_as(
+        r#"
+SELECT MAX(position) FROM episode
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(p)
+}
+
+async fn get_position(pool: &SqlitePool, id: i32) -> Result<Option<i32>, episode::Error> {
+    let (p,): (Option<i32>,) = sqlx::query_as(
+        r#"
+SELECT position
+FROM episode
+WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
+    Ok(p)
 }
 
 #[cfg(test)]
@@ -304,5 +276,43 @@ INSERT INTO episode (id, position) VALUES (5, NULL);
         assert_eq!(get_position(&pool, 5).await.unwrap().unwrap(), 2);
         assert_eq!(get_position(&pool, 3).await.unwrap().unwrap(), 1);
         assert_eq!(get_position(&pool, 4).await.unwrap().unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn delete_position_null() {
+        let pool = set_up(
+            r#"
+CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER);
+INSERT INTO episode (id, position) VALUES (1, NULL);
+            "#,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(delete(&pool, 1).await.unwrap(), ());
+        assert_eq!(get_position(&pool, 1).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn delete_position_in_queue() {
+        let pool = set_up(
+            r#"
+CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER);
+INSERT INTO episode (id, position) VALUES (1, 4);
+INSERT INTO episode (id, position) VALUES (2, 3);
+INSERT INTO episode (id, position) VALUES (3, 2);
+INSERT INTO episode (id, position) VALUES (4, 1);
+INSERT INTO episode (id, position) VALUES (5, 0);
+            "#,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(delete(&pool, 3).await.unwrap(), ());
+        assert_eq!(get_position(&pool, 1).await.unwrap().unwrap(), 3);
+        assert_eq!(get_position(&pool, 2).await.unwrap().unwrap(), 2);
+        assert_eq!(get_position(&pool, 4).await.unwrap().unwrap(), 1);
+        assert_eq!(get_position(&pool, 5).await.unwrap().unwrap(), 0);
+        assert_eq!(get_position(&pool, 3).await.unwrap(), None);
     }
 }

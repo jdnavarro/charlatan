@@ -43,15 +43,6 @@ fn set_progress(
         .and_then(|e, prog, p| with_handler(db::set_progress(p, e, prog)))
 }
 
-fn crawl(
-    pool: SqlitePool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("crawl")
-        .and(warp::post())
-        .and(with_pool(pool))
-        .and_then(|p| with_handler(db::crawl(p)))
-}
-
 fn position(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -60,4 +51,13 @@ fn position(
         .and(warp::patch())
         .and(json_body())
         .and_then(handler::position)
+}
+
+fn crawl(
+    pool: SqlitePool,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("crawl")
+        .and(warp::post())
+        .and(with_pool(pool))
+        .and_then(|p| with_handler(db::crawl(p)))
 }

@@ -14,7 +14,7 @@ pub mod queue;
 pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    podcast::api(pool.clone()).or(episode::api(pool.clone()).or(queue::api(pool)))
+    podcast::api(pool.clone()).or(episode::api(pool))
 }
 
 pub(crate) fn with_pool(
