@@ -1,4 +1,3 @@
-use rss::Channel;
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
 use super::entity::Podcast;
@@ -32,45 +31,38 @@ WHERE id = ?
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, src: String) -> Result<i32> {
-    // TODO: Report and skip errors
-    let channel = Channel::from_url(&src).unwrap();
-
-    // TODO: Insert episodes here
-
+pub(super) async fn add(pool: SqlitePool, src: &str, title: &str) -> Result<i32> {
     sqlx::query!(
         r#"
 INSERT INTO podcast ( src, title )
 VALUES ( $1, $2 )
         "#,
         src,
-        &channel.title()
+        title
     )
     .execute(&pool)
     .await?;
 
-    let rec: (i32,) = sqlx::query_as("SELECT last_insert_rowid()")
+    let (id,): (i32,) = sqlx::query_as("SELECT last_insert_rowid()")
         .fetch_one(&pool)
         .await?;
 
-    Ok(rec.0)
+    Ok(id)
 }
 
-// pub(super) async fn crawl(pool: SqlitePool) -> Result<()> {
-//         let channel = Channel::from_url(&podcast.src.to_string()).unwrap();
-//         for episode in channel.items() {
-//             sqlx::query!(
-//                 r#"
-// INSERT INTO episode ( title, src, progress, podcast )
-// VALUES ( $1, $2, 0, $3 )
-//                 "#,
-//                 &episode.title(),
-//                 &episode.enclosure().unwrap().url(),
-//                 &podcast.src,
-//             )
-//             .execute(&pool)
-//             .await?;
-//         }
-//     }
-//     Ok(())
-// }
+pub(super) async fn crawl(pool: SqlitePool, id: i32, items: &[rss::Item]) -> Result<()> {
+    for item in items {
+        sqlx::query!(
+            r#"
+INSERT INTO episode ( title, src, progress, podcast )
+VALUES ( $1, $2, 0, $3 )
+            "#,
+            &item.title(),
+            &item.enclosure().unwrap().url(),
+            id,
+        )
+        .execute(&pool)
+        .await?;
+    }
+    Ok(())
+}

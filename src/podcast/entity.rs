@@ -6,3 +6,9 @@ pub struct Podcast {
     pub src: String,
     pub title: String,
 }
+
+impl warp::Reply for Podcast {
+    fn into_response(self) -> warp::reply::Response {
+        warp::reply::json(&self).into_response()
+    }
+}

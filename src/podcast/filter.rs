@@ -7,7 +7,10 @@ use crate::{json_body, with_pool};
 pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    list(pool.clone()).or(get(pool.clone())).or(add(pool))
+    list(pool.clone())
+        .or(get(pool.clone()))
+        .or(add(pool.clone()))
+        .or(crawl(pool))
 }
 
 fn list(
@@ -38,11 +41,11 @@ fn add(
         .and_then(handler::add)
 }
 
-// fn crawl(
-//     pool: SqlitePool,
-// ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-//     with_pool(pool)
-//         .and(warp::path!("podcasts" / i32 / "crawl"))
-//         .and(warp::post())
-//         .and_then(handler::crawl)
-// }
+fn crawl(
+    pool: SqlitePool,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    with_pool(pool)
+        .and(warp::path!("podcasts" / i32 / "crawl"))
+        .and(warp::post())
+        .and_then(handler::crawl)
+}

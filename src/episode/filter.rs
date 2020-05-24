@@ -8,7 +8,6 @@ pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     list(pool.clone())
-        // .or(crawl(pool.clone()))
         .or(get_progress(pool.clone()))
         .or(set_progress(pool.clone()))
         .or(position(pool))

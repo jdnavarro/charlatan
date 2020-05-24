@@ -11,5 +11,5 @@ CREATE TABLE episode (
   progress INTEGER NOT NULL,
   position INTEGER, -- UNIQUE DEFERRABLE INITIALLY DEFERRED,
   podcast TEXT NOT NULL,
-  FOREIGN KEY (podcast) REFERENCES podcast (src)
+  FOREIGN KEY (podcast) REFERENCES podcast (id)
   );

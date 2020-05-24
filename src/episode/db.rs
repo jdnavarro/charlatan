@@ -177,28 +177,6 @@ WHERE id = ?
     Ok(p)
 }
 
-// pub(super) async fn crawl(pool: SqlitePool) -> Result<()> {
-//     let podcasts = podcast::handler::list(pool.clone()).await?;
-//     for podcast in podcasts {
-//         // TODO: Bubble up error
-//         let channel = Channel::from_url(&podcast.src.to_string()).unwrap();
-//         for episode in channel.items() {
-//             sqlx::query!(
-//                 r#"
-// INSERT INTO episode ( title, src, progress, podcast )
-// VALUES ( $1, $2, 0, $3 )
-//                 "#,
-//                 &episode.title(),
-//                 &episode.enclosure().unwrap().url(),
-//                 &podcast.src,
-//             )
-//             .execute(&pool)
-//             .await?;
-//         }
-//     }
-//     Ok(())
-// }
-
 #[cfg(test)]
 mod tests {
     use sqlx::sqlite::SqlitePool;
