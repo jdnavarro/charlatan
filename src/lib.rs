@@ -6,10 +6,8 @@ use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 use warp::{Filter, Future};
 
-pub mod entity;
 pub mod episode;
 pub mod podcast;
-pub mod queue;
 
 pub fn api(
     pool: SqlitePool,
@@ -17,13 +15,11 @@ pub fn api(
     podcast::api(pool.clone()).or(episode::api(pool))
 }
 
-pub(crate) fn with_pool(
-    pool: SqlitePool,
-) -> impl Filter<Extract = (SqlitePool,), Error = Infallible> + Clone {
+fn with_pool(pool: SqlitePool) -> impl Filter<Extract = (SqlitePool,), Error = Infallible> + Clone {
     warp::any().map(move || pool.clone())
 }
 
-pub(crate) async fn with_handler<T, F>(f: F) -> Result<impl warp::Reply, Infallible>
+async fn with_handler<T, F>(f: F) -> Result<impl warp::Reply, Infallible>
 where
     F: Future<Output = Result<T, sqlx::Error>>,
     T: Serialize,
@@ -35,6 +31,21 @@ where
         )),
         Err(e) => Ok(warp::reply::with_status(
             warp::reply::json(&format!("{}", e)),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )),
+    }
+}
+
+fn json_reply(
+    r: Result<impl Serialize, episode::Error>,
+) -> Result<warp::reply::WithStatus<warp::reply::Json>, warp::Rejection> {
+    match r {
+        Ok(o) => Ok(warp::reply::with_status(
+            warp::reply::json(&o),
+            StatusCode::OK,
+        )),
+        Err(e) => Ok(warp::reply::with_status(
+            warp::reply::json(&e.to_string()),
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
     }

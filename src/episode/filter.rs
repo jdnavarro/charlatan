@@ -1,9 +1,8 @@
 use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
-use super::db;
 use super::handler;
-use crate::{json_body, with_handler, with_pool};
+use crate::{json_body, with_pool};
 
 pub fn api(
     pool: SqlitePool,
@@ -18,29 +17,29 @@ pub fn api(
 fn list(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("episodes")
+    with_pool(pool)
+        .and(warp::path!("episodes"))
         .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(|p| with_handler(db::list(p)))
+        .and_then(handler::list)
 }
 
 fn get_progress(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("episodes" / i32 / "progress")
+    with_pool(pool)
+        .and(warp::path!("episodes" / i32 / "progress"))
         .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(|e, p| with_handler(db::get_progress(p, e)))
+        .and_then(handler::get_progress)
 }
 
 fn set_progress(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("episodes" / i32 / "progress")
+    with_pool(pool)
+        .and(warp::path!("episodes" / i32 / "progress"))
         .and(warp::put())
         .and(json_body())
-        .and(with_pool(pool))
-        .and_then(|e, prog, p| with_handler(db::set_progress(p, e, prog)))
+        .and_then(handler::set_progress)
 }
 
 fn position(
@@ -53,11 +52,12 @@ fn position(
         .and_then(handler::position)
 }
 
+// TODO Move to its own module
 fn crawl(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("crawl")
+    with_pool(pool)
+        .and(warp::path!("crawl"))
         .and(warp::post())
-        .and(with_pool(pool))
-        .and_then(|p| with_handler(db::crawl(p)))
+        .and_then(handler::crawl)
 }

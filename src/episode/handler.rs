@@ -1,9 +1,23 @@
 use std::collections::HashMap;
 
+use super::db;
+use crate::json_reply;
 use sqlx::sqlite::SqlitePool;
-use warp::http::StatusCode;
 
-use crate::queue;
+pub(super) async fn get_progress(
+    p: SqlitePool,
+    e: i32,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::get_progress(p, e).await)
+}
+
+pub(super) async fn set_progress(
+    p: SqlitePool,
+    e: i32,
+    prog: i32,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::set_progress(p, e, prog).await)
+}
 
 pub(super) async fn position(
     p: SqlitePool,
@@ -12,25 +26,20 @@ pub(super) async fn position(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let position = hm.get("position").ok_or(warp::reject::not_found())?;
     match position {
-        None => match queue::db::delete(&p, id).await {
-            Ok(r) => Ok(warp::reply::with_status(
-                warp::reply::json(&r),
-                StatusCode::OK,
-            )),
-            Err(e) => Ok(warp::reply::with_status(
-                warp::reply::json(&e.to_string()),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            )),
-        },
-        Some(pos) => match queue::db::position(&p, id, *pos).await {
-            Ok(r) => Ok(warp::reply::with_status(
-                warp::reply::json(&r),
-                StatusCode::OK,
-            )),
-            Err(e) => Ok(warp::reply::with_status(
-                warp::reply::json(&e.to_string()),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            )),
-        },
+        None => json_reply(db::delete(&p, id).await),
+        Some(pos) => json_reply(db::position(&p, id, *pos).await),
     }
+}
+
+pub(super) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::list(p).await)
+}
+
+#[allow(dead_code)]
+pub(super) async fn queue(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::queue(p).await)
+}
+
+pub(super) async fn crawl(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::crawl(p).await)
 }
