@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
         .parse()
         .expect("BIND_ADDRESS is invalid");
 
-    warp::serve(charlatan_server::api(pool).with(warp::log("charlatan")))
+    warp::serve(charlatan::api(pool).with(warp::log("charlatan")))
         .run(bind_address)
         .await;
 

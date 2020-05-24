@@ -1,5 +1,5 @@
 [package]
-name = "charlatan-server"
+name = "charlatan"
 version = "0.1.0"
 authors = ["Danny Navarro"]
 edition = "2018"
