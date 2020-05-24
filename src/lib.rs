@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
-use warp::{Filter, Future};
+use warp::Filter;
 
 pub mod episode;
 pub mod podcast;
@@ -19,25 +19,8 @@ fn with_pool(pool: SqlitePool) -> impl Filter<Extract = (SqlitePool,), Error = I
     warp::any().map(move || pool.clone())
 }
 
-async fn with_handler<T, F>(f: F) -> Result<impl warp::Reply, Infallible>
-where
-    F: Future<Output = Result<T, sqlx::Error>>,
-    T: Serialize,
-{
-    match f.await {
-        Ok(r) => Ok(warp::reply::with_status(
-            warp::reply::json(&r),
-            StatusCode::OK,
-        )),
-        Err(e) => Ok(warp::reply::with_status(
-            warp::reply::json(&format!("{}", e)),
-            StatusCode::INTERNAL_SERVER_ERROR,
-        )),
-    }
-}
-
 fn json_reply(
-    r: Result<impl Serialize, episode::Error>,
+    r: Result<impl Serialize, impl std::error::Error>,
 ) -> Result<warp::reply::WithStatus<warp::reply::Json>, warp::Rejection> {
     match r {
         Ok(o) => Ok(warp::reply::with_status(

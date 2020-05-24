@@ -40,6 +40,6 @@ pub(super) async fn queue(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejec
     json_reply(db::queue(p).await)
 }
 
-pub(super) async fn crawl(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::crawl(p).await)
-}
+// pub(super) async fn crawl(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
+//     json_reply(db::crawl(p).await)
+// }

@@ -8,7 +8,7 @@ pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     list(pool.clone())
-        .or(crawl(pool.clone()))
+        // .or(crawl(pool.clone()))
         .or(get_progress(pool.clone()))
         .or(set_progress(pool.clone()))
         .or(position(pool))
@@ -52,12 +52,11 @@ fn position(
         .and_then(handler::position)
 }
 
-// TODO Move to its own module
-fn crawl(
-    pool: SqlitePool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
-        .and(warp::path!("crawl"))
-        .and(warp::post())
-        .and_then(handler::crawl)
-}
+// fn crawl(
+//     pool: SqlitePool,
+// ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+//     with_pool(pool)
+//         .and(warp::path!("crawl"))
+//         .and(warp::post())
+//         .and_then(handler::crawl)
+// }

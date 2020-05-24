@@ -2,7 +2,7 @@ use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
 use super::handler;
-use crate::{with_handler, with_pool};
+use crate::{json_body, with_pool};
 
 pub fn api(
     pool: SqlitePool,
@@ -13,29 +13,27 @@ pub fn api(
 fn list(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("podcasts")
+    with_pool(pool)
+        .and(warp::path!("podcasts"))
         .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(|p| with_handler(handler::list(p)))
+        .and_then(handler::list)
 }
 
 fn get(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("podcasts" / String)
+    with_pool(pool)
+        .and(warp::path!("podcasts" / String))
         .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(|src, p| with_handler(handler::get(p, src)))
+        .and_then(handler::get)
 }
 
 fn add(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let json_body = warp::body::content_length_limit(1024 * 16).and(warp::body::json());
-
-    warp::path!("podcasts")
+    with_pool(pool)
+        .and(warp::path!("podcasts"))
         .and(warp::post())
-        .and(json_body)
-        .and(with_pool(pool))
-        .and_then(|src, p| with_handler(handler::add(p, src)))
+        .and(json_body())
+        .and_then(handler::add)
 }
