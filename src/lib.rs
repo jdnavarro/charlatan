@@ -34,7 +34,9 @@ fn json_reply(
     }
 }
 
-pub(crate) fn json_body<T: DeserializeOwned + Send>(
-) -> impl Filter<Extract = (T,), Error = warp::Rejection> + Copy {
+pub(crate) fn json_body<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Copy
+where
+    T: DeserializeOwned + Send,
+{
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }

@@ -10,7 +10,7 @@ pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT src, title
+SELECT id, src, title
 FROM podcast
         "#
     )
@@ -18,15 +18,15 @@ FROM podcast
     .await?)
 }
 
-pub(super) async fn get(pool: SqlitePool, src: String) -> Result<Podcast> {
+pub(super) async fn get(pool: SqlitePool, id: i32) -> Result<Podcast> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT src, title
+SELECT id, src, title
 FROM podcast
-WHERE src = ?
+WHERE id = ?
         "#,
-        src
+        id
     )
     .fetch_one(&pool)
     .await?)
@@ -55,3 +55,22 @@ VALUES ( $1, $2 )
 
     Ok(rec.0)
 }
+
+// pub(super) async fn crawl(pool: SqlitePool) -> Result<()> {
+//         let channel = Channel::from_url(&podcast.src.to_string()).unwrap();
+//         for episode in channel.items() {
+//             sqlx::query!(
+//                 r#"
+// INSERT INTO episode ( title, src, progress, podcast )
+// VALUES ( $1, $2, 0, $3 )
+//                 "#,
+//                 &episode.title(),
+//                 &episode.enclosure().unwrap().url(),
+//                 &podcast.src,
+//             )
+//             .execute(&pool)
+//             .await?;
+//         }
+//     }
+//     Ok(())
+// }

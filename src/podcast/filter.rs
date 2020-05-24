@@ -23,7 +23,7 @@ fn get(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
-        .and(warp::path!("podcasts" / String))
+        .and(warp::path!("podcasts" / i32))
         .and(warp::get())
         .and_then(handler::get)
 }
@@ -37,3 +37,12 @@ fn add(
         .and(json_body())
         .and_then(handler::add)
 }
+
+// fn crawl(
+//     pool: SqlitePool,
+// ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+//     with_pool(pool)
+//         .and(warp::path!("podcasts" / i32 / "crawl"))
+//         .and(warp::post())
+//         .and_then(handler::crawl)
+// }

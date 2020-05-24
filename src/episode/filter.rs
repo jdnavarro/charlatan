@@ -46,17 +46,8 @@ fn position(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
-        .and(warp::path!("episode" / i32))
+        .and(warp::path!("episodes" / i32))
         .and(warp::patch())
         .and(json_body())
         .and_then(handler::position)
 }
-
-// fn crawl(
-//     pool: SqlitePool,
-// ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-//     with_pool(pool)
-//         .and(warp::path!("crawl"))
-//         .and(warp::post())
-//         .and_then(handler::crawl)
-// }
