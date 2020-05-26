@@ -18,6 +18,7 @@ fn list(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
         .and(warp::path!("podcasts"))
+        .and(warp::path::end())
         .and(warp::get())
         .and_then(handler::list)
 }
@@ -36,6 +37,7 @@ fn add(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
         .and(warp::path!("podcasts"))
+        .and(warp::path::end())
         .and(warp::post())
         .and(json_body())
         .and_then(handler::add)

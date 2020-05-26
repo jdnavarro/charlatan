@@ -9,10 +9,21 @@ use warp::Filter;
 pub mod episode;
 pub mod podcast;
 
+#[cfg(not(feature = "web"))]
 pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(pool.clone()).or(episode::api(pool))
+}
+
+#[cfg(feature = "web")]
+pub fn api(
+    pool: SqlitePool,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let web_dir = std::env::var("WEB_DIR").expect("WEB_DIR is not set");
+    warp::path("api")
+        .and(podcast::api(pool.clone()).or(episode::api(pool)))
+        .or(warp::fs::dir(web_dir))
 }
 
 fn with_pool(pool: SqlitePool) -> impl Filter<Extract = (SqlitePool,), Error = Infallible> + Clone {

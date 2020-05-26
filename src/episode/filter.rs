@@ -18,6 +18,7 @@ fn list(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
         .and(warp::path!("episodes"))
+        .and(warp::path::end())
         .and(warp::get())
         .and_then(handler::list)
 }
