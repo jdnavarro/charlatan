@@ -13,7 +13,6 @@ pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>> {
 SELECT id, title, src, progress, position, podcast
 FROM episode
 ORDER BY id ASC
-LIMIT 50
         "#,
     )
     .fetch_all(&pool)

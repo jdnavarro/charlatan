@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::db;
+use super::{db, entity::Episode};
 use crate::json_reply;
 use sqlx::sqlite::SqlitePool;
 
@@ -32,7 +32,12 @@ pub(super) async fn position(
 }
 
 pub(super) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::list(p).await)
+    // TODO: Obtain HashMap directly from sqlx stream
+    json_reply(db::list(p).await.map(|v| {
+        v.into_iter()
+            .map(|e| (e.id, e))
+            .collect::<HashMap<i32, Episode>>()
+    }))
 }
 
 #[allow(dead_code)]
