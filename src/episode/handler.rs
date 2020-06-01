@@ -11,23 +11,23 @@ pub(super) async fn get_progress(
     json_reply(db::get_progress(p, e).await)
 }
 
-pub(super) async fn set_progress(
-    p: SqlitePool,
-    e: i32,
-    prog: i32,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::set_progress(p, e, prog).await)
-}
-
-pub(super) async fn position(
+pub(super) async fn episode(
     p: SqlitePool,
     id: i32,
-    hm: HashMap<String, Option<i32>>,
+    m: HashMap<String, Option<i32>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let position = hm.get("position").ok_or(warp::reject::not_found())?;
-    match position {
-        None => json_reply(db::delete(&p, id).await),
-        Some(pos) => json_reply(db::position(&p, id, *pos).await),
+    match m.get("progress") {
+        Some(progress) => match progress {
+            None => json_reply(db::set_progress(p.clone(), id, 0).await),
+            Some(prog) => json_reply(db::set_progress(p.clone(), id, *prog).await),
+        },
+        None => match m.get("position") {
+            Some(position) => match position {
+                None => json_reply(db::dequeue(p.clone(), id).await),
+                Some(pos) => json_reply(db::position(p, id, *pos).await),
+            },
+            None => Err(warp::reject::not_found()),
+        },
     }
 }
 

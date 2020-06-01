@@ -9,8 +9,7 @@ pub fn api(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     list(pool.clone())
         .or(get_progress(pool.clone()))
-        .or(set_progress(pool.clone()))
-        .or(position(pool))
+        .or(episode(pool))
 }
 
 fn list(
@@ -32,22 +31,12 @@ fn get_progress(
         .and_then(handler::get_progress)
 }
 
-fn set_progress(
-    pool: SqlitePool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
-        .and(warp::path!("episodes" / i32 / "progress"))
-        .and(warp::put())
-        .and(json_body())
-        .and_then(handler::set_progress)
-}
-
-fn position(
+fn episode(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     with_pool(pool)
         .and(warp::path!("episodes" / i32))
         .and(warp::patch())
         .and(json_body())
-        .and_then(handler::position)
+        .and_then(handler::episode)
 }

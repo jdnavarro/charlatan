@@ -62,8 +62,8 @@ ORDER BY position;
     .await?)
 }
 
-pub async fn position(pool: &SqlitePool, id: i32, new_position: i32) -> Result<i32> {
-    sqlx::query("SAVEPOINT update_queue").execute(pool).await?;
+pub async fn position(pool: SqlitePool, id: i32, new_position: i32) -> Result<i32> {
+    sqlx::query("SAVEPOINT update_queue").execute(&pool).await?;
 
     let max_position = get_max_position(&pool).await?;
 
@@ -86,7 +86,7 @@ AND position <= $2
             old_position,
             new_position,
         )
-        .execute(pool)
+        .execute(&pool)
         .await?;
     } else {
         sqlx::query!(
@@ -99,7 +99,7 @@ AND position <= $2
             new_position,
             old_position,
         )
-        .execute(pool)
+        .execute(&pool)
         .await?;
     }
 
@@ -112,38 +112,38 @@ WHERE id = $2;
         new_position,
         id,
     )
-    .execute(pool)
+    .execute(&pool)
     .await?;
 
-    sqlx::query("RELEASE update_queue").execute(pool).await?;
+    sqlx::query("RELEASE update_queue").execute(&pool).await?;
 
     Ok(new_position)
 }
 
-pub(crate) async fn delete(pool: &SqlitePool, id: i32) -> Result<()> {
+pub(crate) async fn dequeue(pool: SqlitePool, id: i32) -> Result<()> {
     match get_position(&pool, id).await? {
         None => Ok(()),
         Some(position) => {
             sqlx::query!(
                 r#"
-        UPDATE episode
-        SET position = NULL
-        WHERE id = ?;
+UPDATE episode
+SET position = NULL
+WHERE id = ?;
                 "#,
                 id
             )
-            .execute(pool)
+            .execute(&pool)
             .await?;
 
             sqlx::query!(
                 r#"
-        UPDATE episode
-        SET position = position - 1
-        WHERE position >= ?
+UPDATE episode
+SET position = position - 1
+WHERE position >= ?
                 "#,
                 position
             )
-            .execute(pool)
+            .execute(&pool)
             .await?;
 
             Ok(())
@@ -214,7 +214,7 @@ CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER)
         )
         .await?;
 
-        match position(&pool, 2, 3).await {
+        match position(pool, 2, 3).await {
             Err(episode::Error::NotFound) => Ok(()),
             e => panic!(e),
         }
@@ -248,7 +248,7 @@ INSERT INTO episode (id, position) VALUES (5, NULL);
         .await
         .unwrap();
 
-        assert_eq!(position(&pool, 5, 6).await.unwrap(), 4);
+        assert_eq!(position(pool, 5, 6).await.unwrap(), 4);
     }
 
     #[tokio::test]
@@ -266,7 +266,7 @@ INSERT INTO episode (id, position) VALUES (5, 4);
         .await
         .unwrap();
 
-        assert_eq!(position(&pool, 5, 2).await.unwrap(), 2);
+        assert_eq!(position(pool.clone(), 5, 2).await.unwrap(), 2);
         assert_eq!(get_position(&pool, 1).await.unwrap().unwrap(), 4);
         assert_eq!(get_position(&pool, 2).await.unwrap().unwrap(), 3);
         assert_eq!(get_position(&pool, 5).await.unwrap().unwrap(), 2);
@@ -289,7 +289,7 @@ INSERT INTO episode (id, position) VALUES (5, 0);
         .await
         .unwrap();
 
-        assert_eq!(position(&pool, 5, 2).await.unwrap(), 2);
+        assert_eq!(position(pool.clone(), 5, 2).await.unwrap(), 2);
         assert_eq!(get_position(&pool, 1).await.unwrap().unwrap(), 4);
         assert_eq!(get_position(&pool, 2).await.unwrap().unwrap(), 3);
         assert_eq!(get_position(&pool, 5).await.unwrap().unwrap(), 2);
@@ -312,7 +312,7 @@ INSERT INTO episode (id, position) VALUES (5, NULL);
         .await
         .unwrap();
 
-        assert_eq!(position(&pool, 5, 2).await.unwrap(), 2);
+        assert_eq!(position(pool.clone(), 5, 2).await.unwrap(), 2);
         assert_eq!(get_position(&pool, 1).await.unwrap().unwrap(), 4);
         assert_eq!(get_position(&pool, 2).await.unwrap().unwrap(), 3);
         assert_eq!(get_position(&pool, 5).await.unwrap().unwrap(), 2);
@@ -321,7 +321,7 @@ INSERT INTO episode (id, position) VALUES (5, NULL);
     }
 
     #[tokio::test]
-    async fn delete_position_null() {
+    async fn dequeue_position_not_in_queue() {
         let pool = set_up(
             r#"
 CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER);
@@ -331,12 +331,12 @@ INSERT INTO episode (id, position) VALUES (1, NULL);
         .await
         .unwrap();
 
-        assert_eq!(delete(&pool, 1).await.unwrap(), ());
+        assert_eq!(dequeue(pool.clone(), 1).await.unwrap(), ());
         assert_eq!(get_position(&pool, 1).await.unwrap(), None);
     }
 
     #[tokio::test]
-    async fn delete_position_in_queue() {
+    async fn dequeue_position_in_queue() {
         let pool = set_up(
             r#"
 CREATE TEMPORARY TABLE episode (id INTEGER PRIMARY KEY, position INTEGER);
@@ -350,7 +350,7 @@ INSERT INTO episode (id, position) VALUES (5, 0);
         .await
         .unwrap();
 
-        assert_eq!(delete(&pool, 3).await.unwrap(), ());
+        assert_eq!(dequeue(pool.clone(), 3).await.unwrap(), ());
         assert_eq!(get_position(&pool, 1).await.unwrap().unwrap(), 3);
         assert_eq!(get_position(&pool, 2).await.unwrap().unwrap(), 2);
         assert_eq!(get_position(&pool, 4).await.unwrap().unwrap(), 1);
