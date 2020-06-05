@@ -1,6 +1,6 @@
 CREATE TABLE podcast (
   id INTEGER PRIMARY KEY NOT NULL,
-  src TEXT NOT NULL,
+  src TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL
 );
 

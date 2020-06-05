@@ -21,7 +21,7 @@ ORDER BY id ASC
 pub(crate) async fn add(pool: SqlitePool, episode: &NewEpisode<'_>) -> Result<i32> {
     sqlx::query!(
         r#"
-INSERT INTO episode ( guid, title, progress, duration, publication, image, src, position, podcast )
+INSERT OR IGNORE INTO episode ( guid, title, progress, duration, publication, image, src, position, podcast )
 VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
         episode.guid,

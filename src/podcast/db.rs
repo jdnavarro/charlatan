@@ -34,7 +34,7 @@ WHERE id = ?
 pub(super) async fn add(pool: SqlitePool, src: &str, title: &str) -> Result<i32> {
     sqlx::query!(
         r#"
-INSERT INTO podcast ( src, title )
+INSERT OR IGNORE INTO podcast ( src, title )
 VALUES ( $1, $2 )
         "#,
         src,
