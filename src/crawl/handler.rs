@@ -33,22 +33,22 @@ async fn crawl_podcast(p: SqlitePool, podcast: &Podcast) -> Result<()> {
     let channel = rss::Channel::from_url(&podcast.src)?;
 
     for item in channel.items() {
-        let new_episode = parse(podcast.id, &item)?;
+        let new_episode = parse(&podcast, &item)?;
         episode::db::add(p.clone(), &new_episode).await?;
     }
     Ok(())
 }
 
-fn parse(id: i32, item: &rss::Item) -> Result<NewEpisode> {
+fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>> {
     let src = &item
         .enclosure()
-        .ok_or(crawl::Error::MissingSource(id))?
+        .ok_or(crawl::Error::MissingSource(podcast.id))?
         .url();
 
     let title = &item.title().unwrap_or_else(|| {
         log::warn!(
             "Missing title for episode id: {}. Using source URL: {}",
-            id,
+            podcast.id,
             &src
         );
         src.clone()
@@ -58,7 +58,7 @@ fn parse(id: i32, item: &rss::Item) -> Result<NewEpisode> {
         || {
             log::warn!(
                 "Missing guid for episode id: {}. Using source URL: {}",
-                id,
+                podcast.id,
                 &src
             );
             src.clone()
@@ -71,22 +71,24 @@ fn parse(id: i32, item: &rss::Item) -> Result<NewEpisode> {
         .itunes_ext()
         .and_then(|it| it.duration())
         .unwrap_or_else(|| {
-            log::warn!("Missing duration for episode id: {}", id);
+            log::warn!("Missing duration for episode id: {}", podcast.id);
             ""
         });
 
-    // TODO: Use podcast image
     let image = item
         .itunes_ext()
         .and_then(|it| it.image())
         .unwrap_or_else(|| {
-            log::info!("Missing image for episode id: {}. Using podcast image", id);
-            ""
+            log::info!(
+                "Missing image for episode id: {}. Using podcast image",
+                podcast.id
+            );
+            &podcast.image
         });
 
     // TODO: Parse date;
     let publication = item.pub_date().unwrap_or_else(|| {
-        log::warn!("Missing duration for episode id: {}", id);
+        log::warn!("Missing duration for episode id: {}", podcast.id);
         ""
     });
 
@@ -97,6 +99,6 @@ fn parse(id: i32, item: &rss::Item) -> Result<NewEpisode> {
         image,
         publication,
         src,
-        podcast: id,
+        podcast: podcast.id,
     })
 }

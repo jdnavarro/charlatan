@@ -5,6 +5,7 @@ pub struct Podcast {
     pub id: i32,
     pub src: String,
     pub title: String,
+    pub image: String,
 }
 
 impl warp::Reply for Podcast {

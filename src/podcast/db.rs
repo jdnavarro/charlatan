@@ -9,7 +9,7 @@ pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, src, title
+SELECT id, src, title, image
 FROM podcast
         "#
     )
@@ -21,7 +21,7 @@ pub(super) async fn get(pool: SqlitePool, id: i32) -> Result<Podcast> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, src, title
+SELECT id, src, title, image
 FROM podcast
 WHERE id = ?
         "#,
@@ -31,14 +31,15 @@ WHERE id = ?
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, src: &str, title: &str) -> Result<i32> {
+pub(super) async fn add(pool: SqlitePool, src: &str, title: &str, image: &str) -> Result<i32> {
     sqlx::query!(
         r#"
-INSERT OR IGNORE INTO podcast ( src, title )
-VALUES ( $1, $2 )
+INSERT OR IGNORE INTO podcast ( src, title, image)
+VALUES ( $1, $2, $3)
         "#,
         src,
-        title
+        title,
+        image
     )
     .execute(&pool)
     .await?;

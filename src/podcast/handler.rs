@@ -18,8 +18,7 @@ pub(super) async fn add(p: SqlitePool, src: String) -> Result<impl warp::Reply, 
     // TODO: Report and skip errors
     let channel = rss::Channel::from_url(&src).unwrap();
     // TODO: Insert episodes here
-
-    json_reply(db::add(p, &src, channel.title()).await)
+    json_reply(db::add(p, &src, channel.title(), channel.image().unwrap().url()).await)
 }
 
 pub(super) async fn crawl(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {

@@ -1,7 +1,8 @@
 CREATE TABLE podcast (
   id INTEGER PRIMARY KEY NOT NULL,
   src TEXT UNIQUE NOT NULL,
-  title TEXT NOT NULL
+  title TEXT NOT NULL,
+  image TEXT NOT NULL
 );
 
 CREATE TABLE episode (
