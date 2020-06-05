@@ -45,19 +45,10 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         .ok_or(crawl::Error::MissingSource(podcast.id))?
         .url();
 
-    let title = &item.title().unwrap_or_else(|| {
-        log::warn!(
-            "Missing title for episode id: {}. Using source URL: {}",
-            podcast.id,
-            &src
-        );
-        src.clone()
-    });
-
     let guid = &item.guid().map_or_else(
         || {
             log::warn!(
-                "Missing guid for episode id: {}. Using source URL: {}",
+                "Missing guid in episode for podcast id: {}, using source instead: {}",
                 podcast.id,
                 &src
             );
@@ -66,12 +57,21 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         |i| i.value(),
     );
 
+    let title = &item.title().unwrap_or_else(|| {
+        log::warn!(
+            "Missing title in episode guid: {}. Using source URL: {}",
+            &guid,
+            &src
+        );
+        src.clone()
+    });
+
     // TODO: Parse duration format
     let duration = item
         .itunes_ext()
         .and_then(|it| it.duration())
         .unwrap_or_else(|| {
-            log::warn!("Missing duration for episode id: {}", podcast.id);
+            log::warn!("Missing duration for episode guid: {}", &guid);
             ""
         });
 
@@ -80,15 +80,15 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         .and_then(|it| it.image())
         .unwrap_or_else(|| {
             log::info!(
-                "Missing image for episode id: {}. Using podcast image",
-                podcast.id
+                "Missing image for episode guid: {}. Using podcast image",
+                &guid
             );
             &podcast.image
         });
 
     // TODO: Parse date;
     let publication = item.pub_date().unwrap_or_else(|| {
-        log::warn!("Missing duration for episode id: {}", podcast.id);
+        log::warn!("Missing duration for episode guid: {}", &guid);
         ""
     });
 
