@@ -50,20 +50,3 @@ VALUES ( $1, $2, $3)
 
     Ok(id)
 }
-
-pub(super) async fn crawl(pool: SqlitePool, id: i32, items: &[rss::Item]) -> Result<()> {
-    for item in items {
-        sqlx::query!(
-            r#"
-INSERT INTO episode ( title, src, progress, podcast )
-VALUES ( $1, $2, 0, $3 )
-            "#,
-            &item.title(),
-            &item.enclosure().unwrap().url(),
-            id,
-        )
-        .execute(&pool)
-        .await?;
-    }
-    Ok(())
-}

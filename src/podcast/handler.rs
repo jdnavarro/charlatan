@@ -20,12 +20,3 @@ pub(super) async fn add(p: SqlitePool, src: String) -> Result<impl warp::Reply, 
     // TODO: Insert episodes here
     json_reply(db::add(p, &src, channel.title(), channel.image().unwrap().url()).await)
 }
-
-pub(super) async fn crawl(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {
-    let podcast = db::get(p.clone(), id)
-        .await
-        .map_err(|_| warp::reject::not_found())?;
-    // TODO: Async, reuse connection, handle error
-    let channel = rss::Channel::from_url(&podcast.src).unwrap();
-    json_reply(db::crawl(p, id, &channel.items()).await)
-}
