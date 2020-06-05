@@ -6,6 +6,7 @@ use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 use warp::Filter;
 
+pub mod crawl;
 pub mod episode;
 pub mod podcast;
 
@@ -13,7 +14,9 @@ pub mod podcast;
 pub fn api(
     pool: SqlitePool,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    podcast::api(pool.clone()).or(episode::api(pool))
+    podcast::api(pool.clone())
+        .or(episode::api(pool.clone()))
+        .or(crawl::api(pool))
 }
 
 #[cfg(feature = "web")]
