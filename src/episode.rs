@@ -1,8 +1,9 @@
-mod db;
+pub(crate) mod db;
 mod entity;
 mod filter;
 mod handler;
 
+pub use entity::{Episode, NewEpisode};
 pub use filter::api;
 
 use thiserror::Error;

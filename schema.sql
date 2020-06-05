@@ -6,10 +6,14 @@ CREATE TABLE podcast (
 
 CREATE TABLE episode (
   id INTEGER PRIMARY KEY NOT NULL,
+  guid TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL,
   src TEXT NOT NULL,
   progress INTEGER NOT NULL,
+  duration INTEGER NOT NULL,
+  publication INTEGER NOT NULL,
+  image TEXT NOT NULL,
   position INTEGER, -- UNIQUE DEFERRABLE INITIALLY DEFERRED,
-  podcast TEXT NOT NULL,
+  podcast INTEGER NOT NULL,
   FOREIGN KEY (podcast) REFERENCES podcast (id)
   );

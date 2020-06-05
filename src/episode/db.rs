@@ -1,7 +1,6 @@
-// use rss::Channel;
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
-use super::entity::Episode;
+use super::entity::{Episode, NewEpisode};
 use crate::episode;
 
 type Result<T> = std::result::Result<T, episode::Error>;
@@ -10,13 +9,39 @@ pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,
         r#"
-SELECT id, title, src, progress, position, podcast
+SELECT id, guid, title, src, progress, duration, publication, image, position, podcast
 FROM episode
 ORDER BY id ASC
         "#,
     )
     .fetch_all(&pool)
     .await?)
+}
+
+pub(crate) async fn add(pool: SqlitePool, episode: &NewEpisode<'_>) -> Result<i32> {
+    sqlx::query!(
+        r#"
+INSERT INTO episode ( guid, title, progress, duration, publication, image, src, position, podcast )
+VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
+        "#,
+        episode.guid,
+        episode.title,
+        0,
+        episode.duration,
+        episode.publication,
+        episode.image,
+        episode.src,
+        None::<Option<i32>>,
+        episode.podcast,
+    )
+    .execute(&pool)
+    .await?;
+
+    let (id,): (i32,) = sqlx::query_as("SELECT last_insert_rowid()")
+        .fetch_one(&pool)
+        .await?;
+
+    Ok(id)
 }
 
 pub(super) async fn get_progress(pool: SqlitePool, episode: i32) -> Result<i32> {
@@ -52,7 +77,7 @@ pub(crate) async fn queue(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,
         r#"
-SELECT id, title, src, progress, position, podcast
+SELECT id, guid, title, src, progress, duration, publication, image, position, podcast
 FROM episode
 WHERE position IS NOT NULL
 ORDER BY position;
