@@ -16,7 +16,9 @@ thiserror = "1.0"
 tokio = { version = "0.2", features = ["macros"] }
 warp = "0.2"
 
-[features]
+[target.x86_64-unknown-linux-musl.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
 
+[features]
 # Include web assets
 web = []
