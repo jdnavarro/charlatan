@@ -67,13 +67,13 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         src.clone()
     });
 
-    // TODO: Parse duration format
     let duration = item
         .itunes_ext()
         .and_then(|it| it.duration())
+        .and_then(parse_duration)
         .unwrap_or_else(|| {
             log::warn!("Missing duration for episode guid: {}", &guid);
-            ""
+            0
         });
 
     let image = item
@@ -96,8 +96,9 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
             DateTime::parse_from_rfc2822(&d).map_or_else(
                 |e| {
                     log::warn!(
-                        "Failed to parse publication date for episode guid: {} -- {:#?}",
+                        "Failed to parse publication date for episode. | guid: {} | publication date: {} -- {:#?}",
                         &guid,
+                        &d,
                         &e
                     );
                     0
@@ -116,4 +117,46 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         src,
         podcast: podcast.id,
     })
+}
+
+fn parse_duration(s: &str) -> Option<i64> {
+    let mut x = s.split(|c| c == ':').map(|e| e.parse::<i64>());
+
+    let secs = match x.next() {
+        None => {
+            log::warn!("Duration empty");
+            None
+        }
+        Some(Err(e)) => {
+            log::warn!("Couldn't parse seconds in duration: {} -- {:#?}", &s, &e);
+            None
+        }
+        Some(Ok(r)) => Some(r),
+    }?;
+
+    let mins = match x.next() {
+        None => Some(0),
+        Some(Err(e)) => {
+            log::warn!("Couldn't parse minutes in duration: {} -- {:#?}", &s, &e);
+            None
+        }
+        Some(Ok(r)) => Some(r * 60),
+    }?;
+
+    let hours = match x.next() {
+        None => Some(0),
+        Some(Err(e)) => {
+            log::warn!("Couldn't parse hours in duration: {} -- {:#?}", &s, &e);
+            None
+        }
+        Some(Ok(r)) => Some(r * 3600),
+    }?;
+
+    match x.next() {
+        None => Some(secs + mins + hours),
+        Some(_) => {
+            log::warn!("Couldn't understand duration format: {}", &s);
+            None
+        }
+    }
 }
