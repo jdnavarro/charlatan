@@ -17,8 +17,8 @@ pub struct Episode {
 pub struct NewEpisode<'a> {
     pub guid: &'a str,
     pub title: &'a str,
-    pub duration: &'a str,    // Parse i32,
-    pub publication: &'a str, // Parse i32,
+    pub duration: &'a str,
+    pub publication: i64,
     pub image: &'a str,
     pub src: &'a str,
     pub podcast: i32,

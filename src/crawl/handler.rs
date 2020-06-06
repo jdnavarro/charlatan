@@ -1,3 +1,4 @@
+use chrono::DateTime;
 use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
@@ -86,11 +87,25 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
             &podcast.image
         });
 
-    // TODO: Parse date;
-    let publication = item.pub_date().unwrap_or_else(|| {
-        log::warn!("Missing duration for episode guid: {}", &guid);
-        ""
-    });
+    let publication = item.pub_date().map_or_else(
+        || {
+            log::warn!("Missing publication date for episode guid: {}", &guid);
+            0
+        },
+        |d| {
+            DateTime::parse_from_rfc2822(&d).map_or_else(
+                |e| {
+                    log::warn!(
+                        "Failed to parse publication date for episode guid: {} -- {:#?}",
+                        &guid,
+                        &e
+                    );
+                    0
+                },
+                |x| x.timestamp(),
+            )
+        },
+    );
 
     Ok(NewEpisode {
         title,
