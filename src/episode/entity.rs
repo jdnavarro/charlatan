@@ -11,6 +11,7 @@ pub struct Episode {
     pub image: String,
     pub src: String,
     pub position: Option<i32>,
+    pub notes: String,
     pub podcast: i32,
 }
 
@@ -21,5 +22,6 @@ pub struct NewEpisode<'a> {
     pub publication: i64,
     pub image: &'a str,
     pub src: &'a str,
+    pub notes: &'a str,
     pub podcast: i32,
 }

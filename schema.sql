@@ -15,6 +15,7 @@ CREATE TABLE episode (
   publication INTEGER NOT NULL,
   image TEXT NOT NULL,
   position INTEGER, -- UNIQUE DEFERRABLE INITIALLY DEFERRED,
+  notes TEXT NOT NULL,
   podcast INTEGER NOT NULL,
   FOREIGN KEY (podcast) REFERENCES podcast (id)
   );

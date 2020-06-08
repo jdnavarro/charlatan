@@ -9,7 +9,7 @@ pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,
         r#"
-SELECT id, guid, title, src, progress, duration, publication, image, position, podcast
+SELECT id, guid, title, src, progress, duration, publication, image, position, notes, podcast
 FROM episode
 ORDER BY id ASC
         "#,
@@ -21,8 +21,8 @@ ORDER BY id ASC
 pub(crate) async fn add(pool: SqlitePool, episode: &NewEpisode<'_>) -> Result<i32> {
     sqlx::query!(
         r#"
-INSERT OR IGNORE INTO episode ( guid, title, progress, duration, publication, image, src, position, podcast )
-VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT OR IGNORE INTO episode ( guid, title, progress, duration, publication, image, src, position, notes, podcast )
+VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         "#,
         episode.guid,
         episode.title,
@@ -32,6 +32,7 @@ VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
         episode.image,
         episode.src,
         None::<Option<i32>>,
+        episode.notes,
         episode.podcast,
     )
     .execute(&pool)
@@ -77,7 +78,7 @@ pub(crate) async fn queue(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,
         r#"
-SELECT id, guid, title, src, progress, duration, publication, image, position, podcast
+SELECT id, guid, title, src, progress, duration, publication, image, position, notes, podcast
 FROM episode
 WHERE position IS NOT NULL
 ORDER BY position;

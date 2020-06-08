@@ -108,6 +108,11 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         },
     );
 
+    let notes = item.description().unwrap_or_else(|| {
+        log::warn!("Missing description for episode guid: {}", &guid);
+        ""
+    });
+
     Ok(NewEpisode {
         title,
         guid,
@@ -115,6 +120,7 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
         image,
         publication,
         src,
+        notes,
         podcast: podcast.id,
     })
 }
