@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use sqlx::sqlite::SqlitePool;
 
 use super::db;
@@ -14,7 +16,12 @@ pub(super) async fn get(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp
     Ok(podcast)
 }
 
-pub(super) async fn add(p: SqlitePool, src: String) -> Result<impl warp::Reply, warp::Rejection> {
+pub(super) async fn add(
+    p: SqlitePool,
+    m: HashMap<String, String>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let src = m.get("url").ok_or(warp::reject::not_found())?;
+
     // TODO: Report and skip errors
     let channel = rss::Channel::from_url(&src).unwrap();
     // TODO: Insert episodes here
