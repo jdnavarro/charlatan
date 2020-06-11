@@ -53,7 +53,7 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
                 podcast.id,
                 &src
             );
-            src.clone()
+            *src
         },
         |i| i.value(),
     );
@@ -64,7 +64,7 @@ fn parse<'a>(podcast: &'a Podcast, item: &'a rss::Item) -> Result<NewEpisode<'a>
             &guid,
             &src
         );
-        src.clone()
+        *src
     });
 
     let duration = item

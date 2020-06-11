@@ -20,7 +20,7 @@ pub(super) async fn add(
     p: SqlitePool,
     m: HashMap<String, String>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let src = m.get("url").ok_or(warp::reject::not_found())?;
+    let src = m.get("url").ok_or_else(warp::reject::not_found)?;
 
     // TODO: Report and skip errors
     let channel = rss::Channel::from_url(&src).unwrap();
