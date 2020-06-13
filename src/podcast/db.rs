@@ -1,6 +1,6 @@
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
-use super::entity::Podcast;
+use super::entity::{NewPodcast, Podcast};
 use crate::podcast;
 
 type Result<T> = std::result::Result<T, podcast::Error>;
@@ -9,7 +9,7 @@ pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<Podcast>> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, src, title, image
+SELECT id, src, url, title, image, description
 FROM podcast
         "#
     )
@@ -21,7 +21,7 @@ pub(super) async fn get(pool: SqlitePool, id: i32) -> Result<Podcast> {
     Ok(sqlx::query_as!(
         Podcast,
         r#"
-SELECT id, src, title, image
+SELECT id, src, url, title, image, description
 FROM podcast
 WHERE id = ?
         "#,
@@ -31,15 +31,17 @@ WHERE id = ?
     .await?)
 }
 
-pub(super) async fn add(pool: SqlitePool, src: &str, title: &str, image: &str) -> Result<i32> {
+pub(super) async fn add(pool: SqlitePool, podcast: &NewPodcast<'_>) -> Result<i32> {
     sqlx::query!(
         r#"
-INSERT OR IGNORE INTO podcast ( src, title, image)
-VALUES ( $1, $2, $3)
+INSERT OR IGNORE INTO podcast (src, url, title, image, description)
+VALUES ($1, $2, $3, $4, $5)
         "#,
-        src,
-        title,
-        image
+        podcast.src,
+        podcast.url,
+        podcast.title,
+        podcast.image,
+        podcast.description
     )
     .execute(&pool)
     .await?;

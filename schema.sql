@@ -1,8 +1,10 @@
 CREATE TABLE podcast (
   id INTEGER PRIMARY KEY NOT NULL,
   src TEXT UNIQUE NOT NULL,
+  url TEXT NOT NULL,
   title TEXT NOT NULL,
-  image TEXT NOT NULL
+  image TEXT NOT NULL,
+  description TEXT NOT NULL
 );
 
 CREATE TABLE episode (
@@ -14,7 +16,8 @@ CREATE TABLE episode (
   duration INTEGER NOT NULL,
   publication INTEGER NOT NULL,
   image TEXT NOT NULL,
-  position INTEGER, -- UNIQUE DEFERRABLE INITIALLY DEFERRED,
+  -- UNIQUE DEFERRABLE INITIALLY DEFERRED is not supported in sqlite
+  position INTEGER,
   notes TEXT NOT NULL,
   podcast INTEGER NOT NULL,
   FOREIGN KEY (podcast) REFERENCES podcast (id)
