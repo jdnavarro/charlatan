@@ -68,3 +68,7 @@ fn parse<'a>(src: &'a str, channel: &'a rss::Channel) -> NewPodcast<'a> {
         description,
     }
 }
+
+pub(super) async fn delete(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {
+    json_reply(db::delete(p, id).await)
+}

@@ -52,3 +52,16 @@ VALUES ($1, $2, $3, $4, $5)
 
     Ok(id)
 }
+
+pub(super) async fn delete(pool: SqlitePool, id: i32) -> Result<()> {
+    sqlx::query!(
+        r#"
+DELETE FROM podcast where id = ?;
+        "#,
+        id
+    )
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}

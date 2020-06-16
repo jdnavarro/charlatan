@@ -20,5 +20,5 @@ CREATE TABLE episode (
   position INTEGER,
   notes TEXT NOT NULL,
   podcast INTEGER NOT NULL,
-  FOREIGN KEY (podcast) REFERENCES podcast (id)
+  FOREIGN KEY (podcast) REFERENCES podcast (id) ON DELETE CASCADE
   );
