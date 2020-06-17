@@ -4,11 +4,16 @@ use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
 use super::db;
-use super::entity::NewPodcast;
+use super::{entity::NewPodcast, Podcast};
 use crate::json_reply;
 
 pub(crate) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::list(p).await)
+    // TODO: Obtain HashMap directly from sqlx stream?
+    json_reply(db::list(p).await.map(|v| {
+        v.into_iter()
+            .map(|p| (p.id, p))
+            .collect::<HashMap<i32, Podcast>>()
+    }))
 }
 
 pub(super) async fn get(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {

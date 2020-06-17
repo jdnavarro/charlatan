@@ -32,7 +32,7 @@ pub(super) async fn episode(
 }
 
 pub(super) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    // TODO: Obtain HashMap directly from sqlx stream
+    // TODO: Obtain HashMap directly from sqlx stream?
     json_reply(db::list(p).await.map(|v| {
         v.into_iter()
             .map(|e| (e.id, e))
