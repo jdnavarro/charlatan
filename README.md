@@ -1,4 +1,5 @@
 ## Charlatan
+![CI](https://github.com/jdnavarro/charlatan-server/workflows/CI/badge.svg)
 
 Self hosted client-server podcatcher.
 
@@ -26,7 +27,9 @@ This is a toy project in order to learn about Rust, TypeScript and modern React.
     ``` sh
     $ cargo run --features web
     ```
-This already serves the static assets for the UI, but you can run the UI separately:
+
+    This already serves the static assets for the UI, but you can run the UI separately:
+
     ```sh
     $ cargo run
     $ cd web

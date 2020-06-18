@@ -1,4 +1,4 @@
-name: Rust
+name: CI
 
 on:
   push:
@@ -38,6 +38,7 @@ jobs:
         run: cargo build --verbose
         env:
           DATABASE_URL: "sqlite:/tmp/test.sqlite" 
+
       - name: Run tests
         run: cargo test --verbose
         env:
