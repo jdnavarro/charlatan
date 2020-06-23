@@ -22,3 +22,8 @@ CREATE TABLE episode (
   podcast INTEGER NOT NULL,
   FOREIGN KEY (podcast) REFERENCES podcast (id) ON DELETE CASCADE
   );
+
+CREATE TABLE user (
+  name TEXT PRIMARY KEY NOT NULL,
+  password TEXT NOT NULL
+)
