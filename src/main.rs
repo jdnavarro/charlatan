@@ -19,7 +19,9 @@ async fn main() -> anyhow::Result<()> {
         .parse()
         .expect("BIND_ADDRESS is invalid");
 
-    warp::serve(charlatan::api(pool).with(warp::log("charlatan")))
+    let jwt_secret: String = env::var("JWT_SECRET").expect("JWT_SECRET is not set");
+
+    warp::serve(charlatan::api(pool, jwt_secret).with(warp::log("charlatan")))
         .run(bind_address)
         .await;
 

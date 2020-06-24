@@ -2,6 +2,9 @@ use rand::Rng;
 use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
+use chrono::{Duration, Utc};
+use serde::{Deserialize, Serialize};
+
 use super::db;
 use super::entity::User;
 use crate::auth;
@@ -35,6 +38,7 @@ pub(super) async fn register(
 
 pub(super) async fn login(
     p: SqlitePool,
+    jwt_secret: String,
     credentials: User,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match db::get(p, &credentials.name).await {
@@ -43,14 +47,27 @@ pub(super) async fn login(
                 "Trying to login with unexisting user: {}",
                 &credentials.name
             );
-            Ok(StatusCode::BAD_REQUEST)
+            Ok(warp::reply::with_status(
+                warp::reply::json(&"Unable to verify credentials".to_string()),
+                StatusCode::UNAUTHORIZED,
+            ))
         }
-        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Ok(warp::reply::with_status(
+            warp::reply::json(&"Something went wrong".to_string()),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )),
         Ok(user) => {
             if verify(&user.password, credentials.password.as_bytes()) {
-                Ok(StatusCode::OK)
+                let token = encode_token(&jwt_secret, user.name);
+                Ok(warp::reply::with_status(
+                    warp::reply::json(&token),
+                    StatusCode::OK,
+                ))
             } else {
-                Ok(StatusCode::UNAUTHORIZED)
+                Ok(warp::reply::with_status(
+                    warp::reply::json(&"Unable to verify credentials".to_string()),
+                    StatusCode::UNAUTHORIZED,
+                ))
             }
         }
     }
@@ -64,4 +81,28 @@ fn hash(password: &[u8]) -> String {
 
 pub fn verify(hash: &str, password: &[u8]) -> bool {
     argon2::verify_encoded(hash, password).unwrap_or(false)
+}
+
+fn encode_token(secret: &str, sub: String) -> String {
+    jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &Claims::new(sub),
+        &jsonwebtoken::EncodingKey::from_secret(secret.as_ref()),
+    )
+    .unwrap()
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Claims {
+    sub: String,
+    exp: usize,
+}
+
+impl Claims {
+    fn new(user_name: String) -> Self {
+        Self {
+            sub: user_name,
+            exp: (Utc::now() + Duration::weeks(3)).timestamp() as usize,
+        }
+    }
 }

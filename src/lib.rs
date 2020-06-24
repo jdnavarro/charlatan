@@ -14,11 +14,12 @@ pub mod podcast;
 #[cfg(not(feature = "web"))]
 pub fn api(
     pool: SqlitePool,
+    jwt_secret: String,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(pool.clone())
         .or(episode::api(pool.clone()))
         .or(crawl::api(pool.clone()))
-        .or(auth::api(pool))
+        .or(auth::api(pool, jwt_secret))
 }
 
 #[cfg(feature = "web")]
@@ -33,6 +34,12 @@ pub fn api(
 
 fn with_pool(pool: SqlitePool) -> impl Filter<Extract = (SqlitePool,), Error = Infallible> + Clone {
     warp::any().map(move || pool.clone())
+}
+
+fn with_jwt_secret(
+    jwt_token: String,
+) -> impl Filter<Extract = (String,), Error = Infallible> + Clone {
+    warp::any().map(move || jwt_token.clone())
 }
 
 fn json_reply(
