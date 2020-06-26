@@ -17,7 +17,7 @@ pub fn api(
     jwt_secret: String,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(pool.clone())
-        .or(episode::api(pool.clone()))
+        .or(episode::api(pool.clone(), jwt_secret.clone()))
         .or(crawl::api(pool.clone()))
         .or(auth::api(pool, jwt_secret))
 }

@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use super::{db, entity::Episode};
+use crate::auth::handler::decode_token;
 use crate::json_reply;
 use sqlx::sqlite::SqlitePool;
+use warp::hyper::StatusCode;
 
 pub(super) async fn get_progress(
     p: SqlitePool,
@@ -31,13 +33,26 @@ pub(super) async fn episode(
     }
 }
 
-pub(super) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    // TODO: Obtain HashMap directly from sqlx stream?
-    json_reply(db::list(p).await.map(|v| {
-        v.into_iter()
-            .map(|e| (e.id, e))
-            .collect::<HashMap<i32, Episode>>()
-    }))
+pub(super) async fn list(
+    p: SqlitePool,
+    jwt_secret: String,
+    token: String,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    match decode_token(&jwt_secret, &token) {
+        Ok(_) =>
+        // TODO: Obtain HashMap directly from sqlx stream?
+        {
+            json_reply(db::list(p).await.map(|v| {
+                v.into_iter()
+                    .map(|e| (e.id, e))
+                    .collect::<HashMap<i32, Episode>>()
+            }))
+        }
+        Err(_) => Ok(warp::reply::with_status(
+            warp::reply::json(&"Unable to verify credentials".to_string()),
+            StatusCode::UNAUTHORIZED,
+        )),
+    }
 }
 
 #[allow(dead_code)]

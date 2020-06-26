@@ -9,6 +9,8 @@ use super::db;
 use super::entity::User;
 use crate::auth;
 
+const TOKEN_PREFIX: &str = "Bearer ";
+
 pub(super) async fn register(
     p: SqlitePool,
     new_user: User,
@@ -90,6 +92,15 @@ fn encode_token(secret: &str, sub: String) -> String {
         &jsonwebtoken::EncodingKey::from_secret(secret.as_ref()),
     )
     .unwrap()
+}
+
+pub(crate) fn decode_token(secret: &str, token: &str) -> jsonwebtoken::errors::Result<Claims> {
+    jsonwebtoken::decode::<Claims>(
+        token.trim_start_matches(TOKEN_PREFIX),
+        &jsonwebtoken::DecodingKey::from_secret(secret.as_ref()),
+        &jsonwebtoken::Validation::default(),
+    )
+    .map(|token_data| token_data.claims)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

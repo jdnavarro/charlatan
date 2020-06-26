@@ -1,7 +1,7 @@
 mod db;
 mod entity;
 mod filter;
-mod handler;
+pub(crate) mod handler;
 
 pub use filter::api;
 
