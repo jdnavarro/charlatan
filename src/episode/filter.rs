@@ -21,7 +21,6 @@ fn list(
         .and(with_jwt_secret(jwt_secret))
         .and(warp::header("Authorization"))
         .and(warp::path!("episodes"))
-        .and(warp::path::end())
         .and(warp::get())
         .and_then(handler::list)
 }

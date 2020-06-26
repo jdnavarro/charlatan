@@ -5,6 +5,7 @@ use crate::auth;
 
 type Result<T> = std::result::Result<T, auth::Error>;
 
+#[allow(dead_code)]
 pub(crate) async fn list(pool: SqlitePool) -> Result<Vec<User>> {
     Ok(sqlx::query_as!(
         User,

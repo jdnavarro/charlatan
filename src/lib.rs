@@ -10,6 +10,7 @@ pub mod auth;
 pub mod crawl;
 pub mod episode;
 pub mod podcast;
+pub mod response;
 
 #[cfg(not(feature = "web"))]
 pub fn api(

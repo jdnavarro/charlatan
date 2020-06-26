@@ -45,16 +45,13 @@ pub(super) async fn login(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match db::get(p, &credentials.name).await {
         Err(auth::Error::NotFound) => {
-            log::warn!(
-                "Trying to login with unexisting user: {}",
-                &credentials.name
-            );
+            log::warn!("Unknown user: {}", &credentials.name);
             Ok(warp::reply::with_status(
                 warp::reply::json(&"Unable to verify credentials".to_string()),
                 StatusCode::UNAUTHORIZED,
             ))
         }
-        Err(e) => Ok(warp::reply::with_status(
+        Err(_) => Ok(warp::reply::with_status(
             warp::reply::json(&"Something went wrong".to_string()),
             StatusCode::INTERNAL_SERVER_ERROR,
         )),
@@ -101,6 +98,10 @@ pub(crate) fn decode_token(secret: &str, token: &str) -> jsonwebtoken::errors::R
         &jsonwebtoken::Validation::default(),
     )
     .map(|token_data| token_data.claims)
+}
+
+pub(crate) fn identify(secret: &str, token: &str) -> Result<String, auth::Error> {
+    Ok(decode_token(secret, token).map_err(auth::Error::JWT)?.sub)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
