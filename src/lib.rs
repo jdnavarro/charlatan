@@ -22,7 +22,7 @@ pub fn api(
     app: App,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(pool.clone())
-        .or(episode::api(pool.clone(), app))
+        .or(episode::api(app))
         .or(crawl::api(pool.clone()))
         .or(auth::api(pool, jwt_secret))
 }
@@ -37,7 +37,7 @@ pub fn api(
     warp::path("api")
         .and(
             podcast::api(pool.clone())
-                .or(episode::api(pool.clone(), app))
+                .or(episode::api(app))
                 .or(auth::api(pool, jwt_secret)),
         )
         .or(warp::fs::dir(web_dir))

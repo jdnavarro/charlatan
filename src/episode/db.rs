@@ -7,7 +7,7 @@ use crate::episode;
 type Result<T> = std::result::Result<T, episode::Error>;
 
 impl App {
-    pub async fn list(&self) -> Result<Vec<Episode>> {
+    pub(super) async fn list(&self) -> Result<Vec<Episode>> {
         Ok(sqlx::query_as!(
             Episode,
             r#"
@@ -18,6 +18,125 @@ ORDER BY id ASC
         )
         .fetch_all(&self.pool)
         .await?)
+    }
+
+    pub(super) async fn get_progress(&self, episode: i32) -> Result<i32> {
+        let episode = sqlx::query!(
+            r#"
+SELECT progress
+FROM episode
+WHERE id = ?
+        "#,
+            episode,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(episode.progress)
+    }
+    pub(super) async fn set_progress(&self, episode: i32, progress: i32) -> Result<()> {
+        sqlx::query!(
+            r#"
+UPDATE episode
+SET progress = $1
+WHERE id = $2
+        "#,
+            progress,
+            episode,
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub(super) async fn dequeue(&self, id: i32) -> Result<()> {
+        match get_position(&self.pool, id).await? {
+            None => Ok(()),
+            Some(position) => {
+                sqlx::query!(
+                    r#"
+UPDATE episode
+SET position = NULL
+WHERE id = ?;
+                "#,
+                    id
+                )
+                .execute(&self.pool)
+                .await?;
+                sqlx::query!(
+                    r#"
+UPDATE episode
+SET position = position - 1
+WHERE position >= ?
+                "#,
+                    position
+                )
+                .execute(&self.pool)
+                .await?;
+                Ok(())
+            }
+        }
+    }
+
+    pub(super) async fn position(&self, id: i32, new_position: i32) -> Result<i32> {
+        sqlx::query("SAVEPOINT update_queue")
+            .execute(&self.pool)
+            .await?;
+
+        let max_position = get_max_position(&self.pool).await?;
+
+        let new_position = if new_position > max_position {
+            max_position + 1
+        } else {
+            new_position
+        };
+
+        let old_position = get_position(&self.pool, id).await?.unwrap_or(max_position);
+
+        if new_position > old_position {
+            sqlx::query!(
+                r#"
+UPDATE episode
+SET position = position - 1
+WHERE position >= $1
+AND position <= $2
+                    "#,
+                old_position,
+                new_position,
+            )
+            .execute(&self.pool)
+            .await?;
+        } else {
+            sqlx::query!(
+                r#"
+UPDATE episode
+SET position = position + 1
+WHERE position >= $1
+AND position <= $2
+        "#,
+                new_position,
+                old_position,
+            )
+            .execute(&self.pool)
+            .await?;
+        }
+
+        sqlx::query!(
+            r#"
+UPDATE episode
+SET position = $1
+WHERE id = $2;
+        "#,
+            new_position,
+            id,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        sqlx::query("RELEASE update_queue")
+            .execute(&self.pool)
+            .await?;
+
+        Ok(new_position)
     }
 }
 
@@ -48,35 +167,6 @@ VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     Ok(id)
 }
 
-pub(super) async fn get_progress(pool: SqlitePool, episode: i32) -> Result<i32> {
-    let episode = sqlx::query!(
-        r#"
-SELECT progress
-FROM episode
-WHERE id = ?
-        "#,
-        episode,
-    )
-    .fetch_one(&pool)
-    .await?;
-    Ok(episode.progress)
-}
-
-pub(super) async fn set_progress(pool: SqlitePool, episode: i32, progress: i32) -> Result<()> {
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET progress = $1
-WHERE id = $2
-        "#,
-        progress,
-        episode,
-    )
-    .execute(&pool)
-    .await?;
-    Ok(())
-}
-
 pub(crate) async fn queue(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,
@@ -89,95 +179,6 @@ ORDER BY position;
     )
     .fetch_all(&pool)
     .await?)
-}
-
-pub async fn position(pool: SqlitePool, id: i32, new_position: i32) -> Result<i32> {
-    sqlx::query("SAVEPOINT update_queue").execute(&pool).await?;
-
-    let max_position = get_max_position(&pool).await?;
-
-    let new_position = if new_position > max_position {
-        max_position + 1
-    } else {
-        new_position
-    };
-
-    let old_position = get_position(&pool, id).await?.unwrap_or(max_position);
-
-    if new_position > old_position {
-        sqlx::query!(
-            r#"
-UPDATE episode
-SET position = position - 1
-WHERE position >= $1
-AND position <= $2
-                    "#,
-            old_position,
-            new_position,
-        )
-        .execute(&pool)
-        .await?;
-    } else {
-        sqlx::query!(
-            r#"
-UPDATE episode
-SET position = position + 1
-WHERE position >= $1
-AND position <= $2
-        "#,
-            new_position,
-            old_position,
-        )
-        .execute(&pool)
-        .await?;
-    }
-
-    sqlx::query!(
-        r#"
-UPDATE episode
-SET position = $1
-WHERE id = $2;
-        "#,
-        new_position,
-        id,
-    )
-    .execute(&pool)
-    .await?;
-
-    sqlx::query("RELEASE update_queue").execute(&pool).await?;
-
-    Ok(new_position)
-}
-
-pub(crate) async fn dequeue(pool: SqlitePool, id: i32) -> Result<()> {
-    match get_position(&pool, id).await? {
-        None => Ok(()),
-        Some(position) => {
-            sqlx::query!(
-                r#"
-UPDATE episode
-SET position = NULL
-WHERE id = ?;
-                "#,
-                id
-            )
-            .execute(&pool)
-            .await?;
-
-            sqlx::query!(
-                r#"
-UPDATE episode
-SET position = position - 1
-WHERE position >= ?
-                "#,
-                position
-            )
-            .execute(&pool)
-            .await?;
-
-            Ok(())
-        }
-    }
 }
 
 async fn get_max_position(pool: &SqlitePool) -> Result<i32> {

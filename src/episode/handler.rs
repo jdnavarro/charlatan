@@ -7,37 +7,9 @@ use crate::app::App;
 use crate::json_reply;
 use crate::response;
 
-pub(super) async fn get_progress(
-    p: SqlitePool,
-    e: i32,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::get_progress(p, e).await)
-}
-
-pub(super) async fn episode(
-    p: SqlitePool,
-    id: i32,
-    m: HashMap<String, Option<i32>>,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    match m.get("progress") {
-        Some(progress) => match progress {
-            None => json_reply(db::set_progress(p.clone(), id, 0).await),
-            Some(prog) => json_reply(db::set_progress(p.clone(), id, *prog).await),
-        },
-        None => match m.get("position") {
-            Some(position) => match position {
-                None => json_reply(db::dequeue(p.clone(), id).await),
-                Some(pos) => json_reply(db::position(p, id, *pos).await),
-            },
-            None => Err(warp::reject::not_found()),
-        },
-    }
-}
-
 pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
         let _ = app.identify(&token)?;
-
         let episodes = app.episode.list().await.map(|v| {
             v.into_iter()
                 .map(|e| (e.id, e))
@@ -45,6 +17,54 @@ pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, wa
         })?;
 
         Ok(warp::reply::json(&episodes))
+    };
+    response::unify(response().await)
+}
+
+pub(super) async fn episode(
+    token: String,
+    id: i32,
+    m: HashMap<String, Option<i32>>,
+    app: App,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let response = || async {
+        let _ = app.identify(&token)?;
+
+        match m.get("progress") {
+            Some(value) => {
+                let r = match value {
+                    None => app.episode.set_progress(id, 0).await?,
+                    Some(progress) => app.episode.set_progress(id, *progress).await?,
+                };
+                Ok(warp::reply::json(&r))
+            }
+            None => match m.get("position") {
+                Some(value) => {
+                    let r = match value {
+                        None => {
+                            let _ = app.episode.dequeue(id).await?;
+                            -1
+                        }
+                        Some(pos) => app.episode.position(id, *pos).await?,
+                    };
+                    Ok(warp::reply::json(&r))
+                }
+                None => response::bad(),
+            },
+        }
+    };
+    response::unify(response().await)
+}
+
+pub(super) async fn progress(
+    token: String,
+    e: i32,
+    app: App,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let response = || async {
+        let _ = app.identify(&token)?;
+        let progress = app.episode.get_progress(e).await?;
+        Ok(warp::reply::json(&progress))
     };
     response::unify(response().await)
 }
