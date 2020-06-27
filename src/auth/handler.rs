@@ -1,15 +1,9 @@
-use rand::Rng;
 use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
-use chrono::{Duration, Utc};
-use serde::{Deserialize, Serialize};
-
 use super::db;
 use super::entity::User;
-use crate::auth;
-
-const TOKEN_PREFIX: &str = "Bearer ";
+use crate::auth::{self, encode_token, hash, verify};
 
 pub(super) async fn register(
     p: SqlitePool,
@@ -68,53 +62,6 @@ pub(super) async fn login(
                     StatusCode::UNAUTHORIZED,
                 ))
             }
-        }
-    }
-}
-
-fn hash(password: &[u8]) -> String {
-    let salt = rand::thread_rng().gen::<[u8; 32]>();
-    let config = argon2::Config::default();
-    argon2::hash_encoded(password, &salt, &config).unwrap()
-}
-
-pub fn verify(hash: &str, password: &[u8]) -> bool {
-    argon2::verify_encoded(hash, password).unwrap_or(false)
-}
-
-fn encode_token(secret: &str, sub: String) -> String {
-    jsonwebtoken::encode(
-        &jsonwebtoken::Header::default(),
-        &Claims::new(sub),
-        &jsonwebtoken::EncodingKey::from_secret(secret.as_ref()),
-    )
-    .unwrap()
-}
-
-pub(crate) fn decode_token(secret: &str, token: &str) -> jsonwebtoken::errors::Result<Claims> {
-    jsonwebtoken::decode::<Claims>(
-        token.trim_start_matches(TOKEN_PREFIX),
-        &jsonwebtoken::DecodingKey::from_secret(secret.as_ref()),
-        &jsonwebtoken::Validation::default(),
-    )
-    .map(|token_data| token_data.claims)
-}
-
-pub(crate) fn identify(secret: &str, token: &str) -> Result<String, auth::Error> {
-    Ok(decode_token(secret, token).map_err(auth::Error::JWT)?.sub)
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Claims {
-    sub: String,
-    exp: usize,
-}
-
-impl Claims {
-    fn new(user_name: String) -> Self {
-        Self {
-            sub: user_name,
-            exp: (Utc::now() + Duration::weeks(3)).timestamp() as usize,
         }
     }
 }

@@ -21,7 +21,9 @@ async fn main() -> anyhow::Result<()> {
 
     let jwt_secret: String = env::var("JWT_SECRET").expect("JWT_SECRET is not set");
 
-    warp::serve(charlatan::api(pool, jwt_secret).with(warp::log("charlatan")))
+    let app = charlatan::App::new(pool.clone(), jwt_secret.clone());
+
+    warp::serve(charlatan::api(pool, jwt_secret, app).with(warp::log("charlatan")))
         .run(bind_address)
         .await;
 

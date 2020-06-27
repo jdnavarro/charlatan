@@ -6,6 +6,9 @@ use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 use warp::Filter;
 
+pub use app::App;
+
+pub mod app;
 pub mod auth;
 pub mod crawl;
 pub mod episode;
@@ -16,9 +19,10 @@ pub mod response;
 pub fn api(
     pool: SqlitePool,
     jwt_secret: String,
+    app: App,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(pool.clone())
-        .or(episode::api(pool.clone(), jwt_secret.clone()))
+        .or(episode::api(pool.clone(), app))
         .or(crawl::api(pool.clone()))
         .or(auth::api(pool, jwt_secret))
 }
@@ -26,10 +30,16 @@ pub fn api(
 #[cfg(feature = "web")]
 pub fn api(
     pool: SqlitePool,
+    jwt_secret: String,
+    app: App,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let web_dir = std::env::var("WEB_DIR").expect("WEB_DIR is not set");
     warp::path("api")
-        .and(podcast::api(pool.clone()).or(episode::api(pool)))
+        .and(
+            podcast::api(pool.clone())
+                .or(episode::api(pool.clone(), app))
+                .or(auth::api(pool, jwt_secret)),
+        )
         .or(warp::fs::dir(web_dir))
 }
 

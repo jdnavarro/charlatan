@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use super::{db, entity::Episode};
-use crate::auth::handler::identify;
-use crate::json_reply;
-use crate::response::{self, Response};
 use sqlx::sqlite::SqlitePool;
+
+use super::{db, entity::Episode};
+use crate::app::App;
+use crate::json_reply;
+use crate::response;
 
 pub(super) async fn get_progress(
     p: SqlitePool,
@@ -33,15 +34,11 @@ pub(super) async fn episode(
     }
 }
 
-pub(super) async fn list(
-    p: SqlitePool,
-    jwt_secret: String,
-    token: String,
-) -> Result<impl warp::Reply, warp::Rejection> {
+pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = identify(&jwt_secret, &token)?;
+        let _ = app.identify(&token)?;
 
-        let episodes = db::list(p).await.map(|v| {
+        let episodes = app.episode.list().await.map(|v| {
             v.into_iter()
                 .map(|e| (e.id, e))
                 .collect::<HashMap<i32, Episode>>()
@@ -49,7 +46,7 @@ pub(super) async fn list(
 
         Ok(warp::reply::json(&episodes))
     };
-    response::reply(response().await)
+    response::unify(response().await)
 }
 
 #[allow(dead_code)]

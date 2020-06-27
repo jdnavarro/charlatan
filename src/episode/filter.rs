@@ -2,26 +2,22 @@ use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
 use super::handler;
-use crate::{json_body, with_jwt_secret, with_pool};
+use crate::app::{with_app, App};
+use crate::{json_body, with_pool};
 
 pub fn api(
     pool: SqlitePool,
-    jwt_secret: String,
+    app: App,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    list(pool.clone(), jwt_secret)
-        .or(get_progress(pool.clone()))
-        .or(episode(pool))
+    list(app).or(get_progress(pool.clone())).or(episode(pool))
 }
 
-fn list(
-    pool: SqlitePool,
-    jwt_secret: String,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
-        .and(with_jwt_secret(jwt_secret))
-        .and(warp::header("Authorization"))
+fn list(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
         .and(warp::path!("episodes"))
-        .and(warp::get())
+        .and(warp::path::end())
+        .and(warp::header("Authorization"))
+        .and(with_app(app))
         .and_then(handler::list)
 }
 

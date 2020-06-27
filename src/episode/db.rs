@@ -1,21 +1,24 @@
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
+use super::app::App;
 use super::entity::{Episode, NewEpisode};
 use crate::episode;
 
 type Result<T> = std::result::Result<T, episode::Error>;
 
-pub(super) async fn list(pool: SqlitePool) -> Result<Vec<Episode>> {
-    Ok(sqlx::query_as!(
-        Episode,
-        r#"
+impl App {
+    pub async fn list(&self) -> Result<Vec<Episode>> {
+        Ok(sqlx::query_as!(
+            Episode,
+            r#"
 SELECT id, guid, title, src, progress, duration, publication, image, position, notes, podcast
 FROM episode
 ORDER BY id ASC
         "#,
-    )
-    .fetch_all(&pool)
-    .await?)
+        )
+        .fetch_all(&self.pool)
+        .await?)
+    }
 }
 
 pub(crate) async fn add(pool: SqlitePool, episode: &NewEpisode<'_>) -> Result<i32> {
