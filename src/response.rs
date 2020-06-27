@@ -15,6 +15,6 @@ pub fn unify(response: Response) -> Result<impl warp::Reply, warp::Rejection> {
     Ok(response.map_or_else(|j| j.into_response(), |e| e.into_response()))
 }
 
-pub fn bad() -> Response {
-    Err(Error(StatusCode::BAD_REQUEST.into_response()))
+pub fn bad() -> Error {
+    Error(StatusCode::BAD_REQUEST.into_response())
 }

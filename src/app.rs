@@ -4,12 +4,14 @@ use warp::Filter;
 
 use crate::auth;
 use crate::episode;
+use crate::podcast;
 
 #[derive(Debug, Clone)]
 pub struct App {
     pool: sqlx::SqlitePool,
     jwt_secret: String,
     pub episode: episode::App,
+    pub podcast: podcast::App,
 }
 
 impl App {
@@ -17,7 +19,8 @@ impl App {
         Self {
             pool: pool.clone(),
             jwt_secret,
-            episode: episode::App::new(pool),
+            episode: episode::App::new(pool.clone()),
+            podcast: podcast::App::new(pool),
         }
     }
 

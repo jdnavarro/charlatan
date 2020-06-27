@@ -1,56 +1,66 @@
 use std::collections::HashMap;
 
-use sqlx::sqlite::SqlitePool;
-use warp::http::StatusCode;
-
-use super::db;
 use super::{entity::NewPodcast, Podcast};
-use crate::json_reply;
+use crate::app::App;
+use crate::response;
 
-pub(crate) async fn list(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    // TODO: Obtain HashMap directly from sqlx stream?
-    json_reply(db::list(p).await.map(|v| {
-        v.into_iter()
-            .map(|p| (p.id, p))
-            .collect::<HashMap<i32, Podcast>>()
-    }))
+pub(crate) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
+    let response = || async {
+        let _ = app.identify(&token)?;
+        let podcasts = app.podcast.list().await.map(|v| {
+            v.into_iter()
+                .map(|p| (p.id, p))
+                .collect::<HashMap<i32, Podcast>>()
+        })?;
+
+        Ok(warp::reply::json(&podcasts))
+    };
+    response::unify(response().await)
 }
 
-pub(super) async fn get(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {
-    let podcast = db::get(p, id)
-        .await
-        .map_err(|_| warp::reject::not_found())?;
-    Ok(podcast)
+pub(super) async fn get(
+    token: String,
+    id: i32,
+    app: App,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let response = || async {
+        let _ = app.identify(&token)?;
+
+        let podcasts = app.podcast.get(id).await?;
+        Ok(warp::reply::json(&podcasts))
+    };
+    response::unify(response().await)
+}
+
+pub(super) async fn delete(
+    token: String,
+    id: i32,
+    app: App,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let response = || async {
+        let _ = app.identify(&token)?;
+
+        let podcasts = app.podcast.delete(id).await?;
+        Ok(warp::reply::json(&podcasts))
+    };
+    response::unify(response().await)
 }
 
 pub(super) async fn add(
-    p: SqlitePool,
+    token: String,
     m: HashMap<String, String>,
+    app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let src = m.get("url").ok_or_else(warp::reject::not_found)?;
-
-    match rss::Channel::from_url(&src) {
-        Ok(channel) => {
-            log::info!("Adding podcast {}", &src);
-            let new_podcast = parse(&src, &channel);
-            // TODO: Crawl podcast here
-            json_reply(db::add(p, &new_podcast).await)
-        }
-        Err(e) => {
-            let msg = ("There was a problem with podcast url {}", &src);
-            log::warn!(
-                "There was a problem with podcast url {} -- err {:#?}",
-                &src,
-                e
-            );
-
-            Ok(warp::reply::with_status(
-                warp::reply::json(&msg),
-                // TODO: Should handle 3rd party error
-                StatusCode::INTERNAL_SERVER_ERROR,
-            ))
-        }
-    }
+    let response = || async {
+        let _ = app.identify(&token)?;
+        // TODO: Sanitize or parse
+        let src = m.get("url").ok_or(response::bad())?;
+        let channel = rss::Channel::from_url(&src).map_err(|_| response::bad())?;
+        let new_podcast = parse(&src, &channel);
+        let podcasts = app.podcast.add(&new_podcast).await?;
+        Ok(warp::reply::json(&podcasts))
+    };
+    response::unify(response().await)
 }
 
 fn parse<'a>(src: &'a str, channel: &'a rss::Channel) -> NewPodcast<'a> {
@@ -72,8 +82,4 @@ fn parse<'a>(src: &'a str, channel: &'a rss::Channel) -> NewPodcast<'a> {
         image,
         description,
     }
-}
-
-pub(super) async fn delete(p: SqlitePool, id: i32) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::delete(p, id).await)
 }

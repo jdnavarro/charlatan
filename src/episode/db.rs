@@ -167,6 +167,7 @@ VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     Ok(id)
 }
 
+#[allow(dead_code)]
 pub(crate) async fn queue(pool: SqlitePool) -> Result<Vec<Episode>> {
     Ok(sqlx::query_as!(
         Episode,

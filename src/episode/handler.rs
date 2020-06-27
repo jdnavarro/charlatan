@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
-use sqlx::sqlite::SqlitePool;
-
-use super::{db, entity::Episode};
+use super::entity::Episode;
 use crate::app::App;
-use crate::json_reply;
 use crate::response;
 
 pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
@@ -49,7 +46,7 @@ pub(super) async fn episode(
                     };
                     Ok(warp::reply::json(&r))
                 }
-                None => response::bad(),
+                None => Err(response::bad()),
             },
         }
     };
@@ -67,9 +64,4 @@ pub(super) async fn progress(
         Ok(warp::reply::json(&progress))
     };
     response::unify(response().await)
-}
-
-#[allow(dead_code)]
-pub(super) async fn queue(p: SqlitePool) -> Result<impl warp::Reply, warp::Rejection> {
-    json_reply(db::queue(p).await)
 }

@@ -21,6 +21,7 @@ fn episode(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Re
     warp::patch()
         .and(warp::header("Authorization"))
         .and(warp::path!("episodes" / i32))
+        .and(warp::path::end())
         .and(json_body())
         .and(with_app(app))
         .and_then(handler::episode)
