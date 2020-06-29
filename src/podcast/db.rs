@@ -43,7 +43,7 @@ WHERE id = ?
         .await?)
     }
 
-    pub(super) async fn add(&self, podcast: &NewPodcast<'_>) -> Result<i32> {
+    pub(crate) async fn add(&self, podcast: &NewPodcast<'_>) -> Result<i32> {
         sqlx::query!(
             r#"
 INSERT OR IGNORE INTO podcast (src, url, title, image, description)

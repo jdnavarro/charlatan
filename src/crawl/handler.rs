@@ -1,11 +1,7 @@
 use chrono::DateTime;
-use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
-use crate::app::App;
-use crate::crawl;
-use crate::episode::{self, NewEpisode};
-use crate::podcast::Podcast;
+use crate::{app::App, crawl, episode::NewEpisode, podcast::Podcast};
 
 pub(super) async fn crawl(
     _identity: String,
@@ -15,7 +11,7 @@ pub(super) async fn crawl(
         Ok(podcasts) => {
             // TODO: Stream directly with sqlx cursor?
             for podcast in podcasts {
-                match crawl_podcast(app.podcast.pool.clone(), &podcast).await {
+                match crawl_podcast(app.clone(), &podcast).await {
                     Ok(()) => log::info!("Podcast crawled: {}", &podcast.id),
                     Err(e) => {
                         log::warn!("Skipping podcast {} because err -- {:#?}", &podcast.id, &e)
@@ -34,12 +30,12 @@ pub(super) async fn crawl(
 
 type Result<T> = std::result::Result<T, crawl::Error>;
 
-async fn crawl_podcast(p: SqlitePool, podcast: &Podcast) -> Result<()> {
+async fn crawl_podcast(app: App, podcast: &Podcast) -> Result<()> {
     let channel = rss::Channel::from_url(&podcast.src)?;
 
     for item in channel.items() {
         let new_episode = parse(&podcast, &item)?;
-        episode::db::add(p.clone(), &new_episode).await?;
+        app.episode.add(&new_episode).await?;
     }
     Ok(())
 }
