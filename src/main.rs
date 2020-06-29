@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = charlatan::App::new(pool.clone(), jwt_secret.clone());
 
-    warp::serve(charlatan::api(pool, jwt_secret, app).with(warp::log("charlatan")))
+    warp::serve(charlatan::api(app).with(warp::log("charlatan")))
         .run(bind_address)
         .await;
 

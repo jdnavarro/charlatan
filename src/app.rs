@@ -9,9 +9,10 @@ use crate::podcast;
 #[derive(Debug, Clone)]
 pub struct App {
     pool: sqlx::SqlitePool,
-    jwt_secret: String,
+    pub(crate) jwt_secret: String,
     pub episode: episode::App,
     pub podcast: podcast::App,
+    pub auth: auth::Store,
 }
 
 impl App {
@@ -20,7 +21,8 @@ impl App {
             pool: pool.clone(),
             jwt_secret,
             episode: episode::App::new(pool.clone()),
-            podcast: podcast::App::new(pool),
+            podcast: podcast::App::new(pool.clone()),
+            auth: auth::Store::new(pool),
         }
     }
 

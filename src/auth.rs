@@ -8,6 +8,7 @@ use chrono::{Duration, Utc};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+pub use db::Store;
 pub use error::Error;
 pub use filter::api;
 

@@ -1,17 +1,22 @@
-use sqlx::sqlite::SqlitePool;
 use warp::http::StatusCode;
 
-use super::db;
 use super::entity::User;
-use crate::auth::{self, encode_token, hash, verify};
+use crate::{
+    auth::{self, encode_token, hash, verify},
+    App,
+};
 
 pub(super) async fn register(
-    p: SqlitePool,
     new_user: User,
+    app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    match db::get(p.clone(), &new_user.name).await {
+    match app.auth.get(&new_user.name).await {
         Err(auth::Error::NotFound) => {
-            match db::add(p, &new_user.name, &hash(&new_user.password.as_bytes())).await {
+            match app
+                .auth
+                .add(&new_user.name, &hash(&new_user.password.as_bytes()))
+                .await
+            {
                 Ok(()) => {
                     log::info!("Registered user: {}", &new_user.name);
                     Ok(StatusCode::CREATED)
@@ -33,11 +38,10 @@ pub(super) async fn register(
 }
 
 pub(super) async fn login(
-    p: SqlitePool,
-    jwt_secret: String,
     credentials: User,
+    app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    match db::get(p, &credentials.name).await {
+    match app.auth.get(&credentials.name).await {
         Err(auth::Error::NotFound) => {
             log::warn!("Unknown user: {}", &credentials.name);
             Ok(warp::reply::with_status(
@@ -51,7 +55,7 @@ pub(super) async fn login(
         )),
         Ok(user) => {
             if verify(&user.password, credentials.password.as_bytes()) {
-                let token = encode_token(&jwt_secret, user.name);
+                let token = encode_token(&app.jwt_secret, user.name);
                 Ok(warp::reply::with_status(
                     warp::reply::json(&token),
                     StatusCode::OK,

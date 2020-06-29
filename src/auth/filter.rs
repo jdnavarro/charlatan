@@ -1,35 +1,25 @@
-use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
 use super::handler;
-use crate::{app::with_app, json_body, with_jwt_secret, with_pool, App};
+use crate::{app::with_app, json_body, App};
 
-pub fn api(
-    pool: SqlitePool,
-    jwt_secret: String,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    register(pool.clone()).or(login(pool, jwt_secret))
+pub fn api(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    register(app.clone()).or(login(app))
 }
 
-fn register(
-    pool: SqlitePool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
+fn register(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::post()
         .and(warp::path!("register"))
-        .and(warp::post())
         .and(json_body())
+        .and(with_app(app))
         .and_then(handler::register)
 }
 
-fn login(
-    pool: SqlitePool,
-    jwt_secret: String,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    with_pool(pool)
-        .and(with_jwt_secret(jwt_secret))
-        .and(warp::path!("login"))
+fn login(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("login")
         .and(warp::post())
         .and(json_body())
+        .and(with_app(app))
         .and_then(handler::login)
 }
 

@@ -7,7 +7,10 @@ use crate::crawl;
 use crate::episode::{self, NewEpisode};
 use crate::podcast::Podcast;
 
-pub(super) async fn crawl(app: App) -> std::result::Result<impl warp::Reply, warp::Rejection> {
+pub(super) async fn crawl(
+    _identity: String,
+    app: App,
+) -> std::result::Result<impl warp::Reply, warp::Rejection> {
     match app.podcast.list().await {
         Ok(podcasts) => {
             // TODO: Stream directly with sqlx cursor?
