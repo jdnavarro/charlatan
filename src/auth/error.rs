@@ -1,7 +1,7 @@
 use jsonwebtoken::errors::Error as JwtError;
 use thiserror::Error;
 use warp::hyper::StatusCode;
-use warp::Reply;
+use warp::{reject::Reject, Reply};
 
 use crate::response;
 
@@ -33,3 +33,5 @@ impl From<Error> for response::Error {
         }
     }
 }
+
+impl Reject for Error {}

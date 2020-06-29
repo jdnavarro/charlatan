@@ -4,9 +4,8 @@ use super::{entity::NewPodcast, Podcast};
 use crate::app::App;
 use crate::response;
 
-pub(crate) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
+pub(crate) async fn list(_identity: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
         let podcasts = app.podcast.list().await.map(|v| {
             v.into_iter()
                 .map(|p| (p.id, p))
@@ -19,13 +18,11 @@ pub(crate) async fn list(token: String, app: App) -> Result<impl warp::Reply, wa
 }
 
 pub(super) async fn get(
-    token: String,
     id: i32,
+    _identity: String,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
-
         let podcasts = app.podcast.get(id).await?;
         Ok(warp::reply::json(&podcasts))
     };
@@ -33,13 +30,11 @@ pub(super) async fn get(
 }
 
 pub(super) async fn delete(
-    token: String,
     id: i32,
+    _identity: String,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
-
         let podcasts = app.podcast.delete(id).await?;
         Ok(warp::reply::json(&podcasts))
     };
@@ -47,13 +42,12 @@ pub(super) async fn delete(
 }
 
 pub(super) async fn add(
-    token: String,
+    _identity: String,
     m: HashMap<String, String>,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
-        // TODO: Sanitize or parse
+        // TODO: Sanitize or parse URL
         let src = m.get("url").ok_or(response::bad())?;
         let channel = rss::Channel::from_url(&src).map_err(|_| response::bad())?;
         let new_podcast = parse(&src, &channel);

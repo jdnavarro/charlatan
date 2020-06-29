@@ -1,7 +1,7 @@
 mod db;
 mod entity;
 mod error;
-mod filter;
+pub(crate) mod filter;
 pub(crate) mod handler;
 
 use chrono::{Duration, Utc};

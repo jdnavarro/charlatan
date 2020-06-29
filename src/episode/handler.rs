@@ -4,9 +4,8 @@ use super::entity::Episode;
 use crate::app::App;
 use crate::response;
 
-pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
+pub(super) async fn list(_identity: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
         let episodes = app.episode.list().await.map(|v| {
             v.into_iter()
                 .map(|e| (e.id, e))
@@ -19,14 +18,12 @@ pub(super) async fn list(token: String, app: App) -> Result<impl warp::Reply, wa
 }
 
 pub(super) async fn episode(
-    token: String,
     id: i32,
+    _identity: String,
     m: HashMap<String, Option<i32>>,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
-
         match m.get("progress") {
             Some(value) => {
                 let r = match value {
@@ -54,12 +51,11 @@ pub(super) async fn episode(
 }
 
 pub(super) async fn progress(
-    token: String,
     e: i32,
+    _identity: String,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let response = || async {
-        let _ = app.identify(&token)?;
         let progress = app.episode.get_progress(e).await?;
         Ok(warp::reply::json(&progress))
     };

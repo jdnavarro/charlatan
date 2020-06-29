@@ -2,7 +2,7 @@ use sqlx::sqlite::SqlitePool;
 use warp::Filter;
 
 use super::handler;
-use crate::{json_body, with_jwt_secret, with_pool};
+use crate::{app::with_app, json_body, with_jwt_secret, with_pool, App};
 
 pub fn api(
     pool: SqlitePool,
@@ -31,4 +31,15 @@ fn login(
         .and(warp::post())
         .and(json_body())
         .and_then(handler::login)
+}
+
+pub(crate) fn with_identity(
+    app: App,
+) -> impl Filter<Extract = (String,), Error = warp::Rejection> + Clone {
+    warp::any()
+        .and(warp::header("Authorization"))
+        .and(with_app(app))
+        .and_then(|token: String, app: App| async move {
+            app.identify(&token).map_err(warp::reject::custom)
+        })
 }
