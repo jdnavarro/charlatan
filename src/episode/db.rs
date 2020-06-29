@@ -1,12 +1,22 @@
 use sqlx::sqlite::{SqlitePool, SqliteQueryAs};
 
-use super::app::App;
 use super::entity::{Episode, NewEpisode};
 use crate::episode;
 
 type Result<T> = std::result::Result<T, episode::Error>;
 
-impl App {
+#[derive(Debug, Clone)]
+pub struct Store {
+    pub pool: sqlx::SqlitePool,
+}
+
+impl Store {
+    pub fn new(pool: sqlx::SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+impl Store {
     pub(super) async fn list(&self) -> Result<Vec<Episode>> {
         Ok(sqlx::query_as!(
             Episode,
