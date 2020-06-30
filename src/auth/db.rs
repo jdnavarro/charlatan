@@ -1,3 +1,5 @@
+use sqlx::sqlite::SqliteQueryAs;
+
 use super::entity::User;
 use crate::auth;
 
@@ -22,7 +24,7 @@ impl Store {
             r#"
 SELECT name, password
 FROM user
-        "#
+            "#
         )
         .fetch_all(&self.pool)
         .await?)
@@ -35,11 +37,19 @@ FROM user
 SELECT name, password
 FROM user
 WHERE name = ?
-        "#,
+            "#,
             name
         )
         .fetch_one(&self.pool)
         .await?)
+    }
+
+    pub(crate) async fn count(&self) -> Result<i32> {
+        let (count,): (i32,) = sqlx::query_as("SELECT COUNT(*) FROM USER")
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(count)
     }
 
     pub(crate) async fn add(self, name: &str, hash: &str) -> Result<()> {
@@ -47,7 +57,7 @@ WHERE name = ?
             r#"
 INSERT INTO user (name, password)
 VALUES ($1, $2)
-        "#,
+            "#,
             name,
             hash
         )

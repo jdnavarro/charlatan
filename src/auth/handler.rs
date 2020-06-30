@@ -5,35 +5,42 @@ use crate::{
     auth::{self, encode_token, hash, verify},
     App,
 };
-
 pub(super) async fn register(
     new_user: User,
     app: App,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    match app.auth.get(&new_user.name).await {
-        Err(auth::Error::NotFound) => {
-            match app
-                .auth
-                .add(&new_user.name, &hash(&new_user.password.as_bytes()))
-                .await
-            {
-                Ok(()) => {
-                    log::info!("Registered user: {}", &new_user.name);
-                    Ok(StatusCode::CREATED)
-                }
-                Err(e) => {
-                    log::error!("Error while registering user -- {:#?}", &e);
-                    Ok(StatusCode::BAD_REQUEST)
+    match app.auth.count().await {
+        Ok(0) => match app.auth.get(&new_user.name).await {
+            Err(auth::Error::NotFound) => {
+                match app
+                    .auth
+                    .add(&new_user.name, &hash(&new_user.password.as_bytes()))
+                    .await
+                {
+                    Ok(()) => {
+                        log::info!("Registered user: {}", &new_user.name);
+                        Ok(StatusCode::CREATED)
+                    }
+                    Err(e) => {
+                        log::error!("Error while registering user -- {:#?}", &e);
+                        Ok(StatusCode::BAD_REQUEST)
+                    }
                 }
             }
+            Ok(_) => {
+                log::warn!(
+                    "Trying to register an already existing user: {}",
+                    new_user.name
+                );
+                Ok(StatusCode::UNAUTHORIZED)
+            }
+            Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
+        },
+        Ok(_) => {
+            log::warn!("Trying to register a user when one was already set");
+            Ok(StatusCode::UNAUTHORIZED)
         }
-        _ => {
-            log::warn!(
-                "Trying to register an already existing user: {}",
-                new_user.name
-            );
-            Ok(StatusCode::BAD_REQUEST)
-        }
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
