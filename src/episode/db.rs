@@ -1,9 +1,9 @@
 use sqlx::sqlite::SqliteQueryAs;
 
 use super::entity::{Episode, NewEpisode};
-use crate::episode;
+use crate::{db, episode};
 
-type Result<T> = std::result::Result<T, episode::Error>;
+pub(super) type Result<T> = db::Result<T, episode::Error>;
 
 #[derive(Debug, Clone)]
 pub struct Store {

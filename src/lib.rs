@@ -6,6 +6,7 @@ pub use app::App;
 pub mod app;
 pub mod auth;
 pub mod crawl;
+mod db;
 pub mod episode;
 pub mod podcast;
 pub mod response;

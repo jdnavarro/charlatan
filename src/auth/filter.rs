@@ -8,8 +8,8 @@ pub fn api(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Re
 }
 
 fn register(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::post()
-        .and(warp::path!("register"))
+    warp::path!("register")
+        .and(warp::post())
         .and(warp::path::end())
         .and(json_body())
         .and(with_app(app))
@@ -18,8 +18,8 @@ fn register(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::R
 
 fn login(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("login")
-        .and(warp::path::end())
         .and(warp::post())
+        .and(warp::path::end())
         .and(json_body())
         .and(with_app(app))
         .and_then(handler::login)

@@ -3,7 +3,7 @@ use sqlx::sqlite::SqliteQueryAs;
 use super::entity::{NewPodcast, Podcast};
 use crate::podcast;
 
-type Result<T> = std::result::Result<T, podcast::Error>;
+pub(super) type Result<T> = std::result::Result<T, podcast::Error>;
 
 #[derive(Debug, Clone)]
 pub struct Store {

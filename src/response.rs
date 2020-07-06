@@ -11,7 +11,7 @@ impl warp::Reply for Error {
     }
 }
 
-pub fn unify(response: Response) -> Result<impl warp::Reply, warp::Rejection> {
+pub fn unify(response: Response) -> std::result::Result<impl warp::Reply, warp::Rejection> {
     Ok(response.map_or_else(|j| j.into_response(), |e| e.into_response()))
 }
 

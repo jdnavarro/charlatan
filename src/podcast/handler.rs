@@ -1,44 +1,30 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::Infallible};
 
 use super::{entity::NewPodcast, Podcast};
-use crate::app::App;
-use crate::response;
+use crate::{app::App, db, response};
 
-pub(crate) async fn list(_identity: String, app: App) -> Result<impl warp::Reply, warp::Rejection> {
-    let response = || async {
-        let podcasts = app.podcast.list().await.map(|v| {
-            v.into_iter()
-                .map(|p| (p.id, p))
-                .collect::<HashMap<i32, Podcast>>()
-        })?;
-
-        Ok(warp::reply::json(&podcasts))
-    };
-    response::unify(response().await)
+pub(crate) async fn list(_identity: String, app: App) -> Result<impl warp::Reply, Infallible> {
+    db::respond(app.podcast.list().await.map(|v| {
+        v.into_iter()
+            .map(|p| (p.id, p))
+            .collect::<HashMap<i32, Podcast>>()
+    }))
 }
 
 pub(super) async fn get(
     id: i32,
     _identity: String,
     app: App,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    let response = || async {
-        let podcasts = app.podcast.get(id).await?;
-        Ok(warp::reply::json(&podcasts))
-    };
-    response::unify(response().await)
+) -> Result<impl warp::Reply, Infallible> {
+    db::respond(app.podcast.get(id).await)
 }
 
 pub(super) async fn delete(
     id: i32,
     _identity: String,
     app: App,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    let response = || async {
-        let podcasts = app.podcast.delete(id).await?;
-        Ok(warp::reply::json(&podcasts))
-    };
-    response::unify(response().await)
+) -> Result<impl warp::Reply, Infallible> {
+    db::respond(app.podcast.delete(id).await)
 }
 
 pub(super) async fn add(
