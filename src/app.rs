@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 
+use sqlx::sqlite::SqliteQueryAs;
 use warp::Filter;
 
 use crate::auth;
@@ -28,6 +29,21 @@ impl App {
 
     pub fn identify(&self, token: &str) -> Result<String, auth::Error> {
         auth::identify(&self.jwt_secret, token)
+    }
+
+    pub(super) async fn configured(self) -> Result<bool, sqlx::Error> {
+        let (n,): (i32,) = sqlx::query_as(
+            r#"
+SELECT COUNT() FROM USER;
+            "#,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        if n > 0 {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 
