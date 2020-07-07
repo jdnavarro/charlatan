@@ -10,6 +10,7 @@ pub struct Podcast {
     pub description: String,
 }
 
+#[derive(Debug)]
 pub struct NewPodcast<'a> {
     pub src: &'a str,
     pub url: &'a str,

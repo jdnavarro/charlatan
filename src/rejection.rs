@@ -40,7 +40,7 @@ pub(super) async fn handle_rejection(
         match configured {
             Ok(true) => {
                 code = StatusCode::UNAUTHORIZED;
-                type_ = "MissingToken"
+                type_ = "MissingAuthorizationHeader"
             }
             Ok(false) => {
                 code = StatusCode::UNAUTHORIZED;
