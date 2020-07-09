@@ -23,7 +23,16 @@ async fn main() -> anyhow::Result<()> {
 
     let app = charlatan::App::new(pool, jwt_secret);
 
-    warp::serve(charlatan::api(app).with(warp::log("charlatan")))
+    #[cfg(feature = "web")]
+    let api = {
+        let web_dir = std::env::var("WEB_DIR").expect("WEB_DIR is not set");
+        charlatan::api(app).or(warp::fs::dir(web_dir))
+    };
+
+    #[cfg(not(feature = "web"))]
+    let api = charlatan::api(app);
+
+    warp::serve(api.with(warp::log("charlatan")))
         .run(bind_address)
         .await;
 

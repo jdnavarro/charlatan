@@ -13,25 +13,12 @@ use warp::Filter;
 pub use app::App;
 use rejection::handle_rejection;
 
-#[cfg(not(feature = "web"))]
 pub fn api(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     podcast::api(app.clone())
         .or(episode::api(app.clone()))
         .or(crawl::api(app.clone()))
         .or(auth::api(app.clone()))
         .recover(move |x| handle_rejection(app.clone(), x))
-}
-
-#[cfg(feature = "web")]
-pub fn api(app: App) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let web_dir = std::env::var("WEB_DIR").expect("WEB_DIR is not set");
-    warp::path("api")
-        .and(
-            podcast::api(app.clone())
-                .or(episode::api(app.clone()))
-                .or(auth::api(app)),
-        )
-        .or(warp::fs::dir(web_dir))
 }
 
 pub(crate) fn json_body<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Copy
